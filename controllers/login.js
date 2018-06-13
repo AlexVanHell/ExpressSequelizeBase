@@ -1,4 +1,4 @@
-const resHandler = require('../lib/common/http-response-handler');
+const resHandler = require('../lib/util/http-response-handler');
 
 exports.login = function (req, res, next) {
 	const responseBody = { token: 'ASDASD92343298ASDASD' };

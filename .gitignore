@@ -1,2 +1,5 @@
 ## Project dependencies
 /node_modules
+
+## API Documentation
+/public/apidoc/*
