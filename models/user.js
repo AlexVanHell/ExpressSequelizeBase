@@ -27,6 +27,20 @@ module.exports = (sequelize, DataTypes) => {
 		phone: {
 			type: DataTypes.STRING
 		},
+		/* password: {
+			type: DataTypes.STRING({ length: 80 }),
+			allowNull: false
+		},
+		active: {
+			type: DataTypes.BOOLEAN,
+			allowNull: false,
+			//defaultValue: true
+		},
+		visible: {
+			type: DataTypes.BOOLEAN,
+			allowNull: false,
+			//defaultValue: true
+		}, */
 		createdAt: {
 			allowNull: false,
 			type: DataTypes.DATE(3),
@@ -45,5 +59,18 @@ module.exports = (sequelize, DataTypes) => {
 	User.associate = function (models) {
 		// associations can be defined here
 	};
+	User.prototype.generateHash = function (password) {
+		return bcrypt.hash(password, bcrypt.genSaltSync(8));
+	};
+	User.prototype.validPassword = function (password) {
+		return bcrypt.compare(password, this.password);
+	}
+	User.prototype.toJSON = function () {
+		var values = Object.assign({}, this.get());
+
+		delete values.password;
+		return values;
+	}
+
 	return User;
 };

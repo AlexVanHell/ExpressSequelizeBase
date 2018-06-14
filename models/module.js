@@ -5,40 +5,40 @@ module.exports = (sequelize, DataTypes) => {
 			allowNull: false,
 			autoIncrement: true,
 			primaryKey: true,
-			type: Sequelize.INTEGER,
+			type: DataTypes.INTEGER,
 		},
 		name: {
-			type: Sequelize.STRING({ length: 50 }),
+			type: DataTypes.STRING({ length: 50 }),
 			allowNull: false
 		},
 		description: {
-			type: Sequelize.STRING({ length: 140 }),
+			type: DataTypes.STRING({ length: 140 }),
 			allowNull: false
 		},
 		active: {
-			type: Sequelize.BOOLEAN,
+			type: DataTypes.BOOLEAN,
 			//defaultValue: true,
 		},
 		visible: {
-			type: Sequelize.BOOLEAN,
+			type: DataTypes.BOOLEAN,
 			//defaultValue: true,
 		},
 		createdAt: {
 			allowNull: false,
-			type: Sequelize.DATE(3),
+			type: DataTypes.DATE(3),
 			//defaultValue: Sequelize.literal('CURRENT_TIMESTAMP(3)'),
 			field: 'created_at'
 		},
 		updatedAt: {
 			allowNull: false,
-			type: Sequelize.DATE(3),
+			type: DataTypes.DATE(3),
 			//defaultValue: Sequelize.literal('CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)'),
 			field: 'updated_at'
 		}
 	}, {});
 	Module.associate = function (models) {
 		// associations can be defined here
-		Module.hasMany(model.Access);
+		Module.hasMany(models.Access);
 	};
 	return Module;
 };

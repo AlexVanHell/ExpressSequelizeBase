@@ -25,7 +25,7 @@ module.exports = {
 	SUCCESS: {
 		GENERIC: {
 			code: 1000,
-			message: 'Se realízo la operación exitosamente'
+			message: 'Se realizó la operación exitosamente'
 		},
 		LOGIN: {
 			code: 1001,
@@ -34,6 +34,10 @@ module.exports = {
 		USER_CREATED: {
 			code: 1002,
 			message: 'Usuario creado exitosamente'
+		}, 
+		USER_UPDATED: {
+			code: 1003,
+			message: 'Usuario actualizado exitosamente'
 		}
 	}
 };

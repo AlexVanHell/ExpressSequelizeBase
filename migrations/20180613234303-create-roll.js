@@ -9,27 +9,36 @@ module.exports = {
 				type: Sequelize.INTEGER
 			},
 			name: {
-				type: Sequelize.STRING
+				type: Sequelize.STRING({ length: 50 }),
+				allowNull: false
 			},
 			description: {
-				type: Sequelize.STRING
+				type: Sequelize.STRING({ length: 140 }),
+				allowNull: false
 			},
 			active: {
-				type: Sequelize.BOOLEAN
+				type: Sequelize.BOOLEAN,
+				defaultValue: true,
 			},
 			visible: {
-				type: Sequelize.BOOLEAN
+				type: Sequelize.BOOLEAN,
+				defaultValue: true,
 			},
 			fromSystem: {
-				type: Sequelize.BOOLEAN
+				type: Sequelize.BOOLEAN,
+				field: 'from_system'
 			},
 			createdAt: {
 				allowNull: false,
-				type: Sequelize.DATE
+				type: Sequelize.DATE(3),
+				defaultValue: Sequelize.literal('CURRENT_TIMESTAMP(3)'),
+				field: 'created_at'
 			},
 			updatedAt: {
 				allowNull: false,
-				type: Sequelize.DATE
+				type: Sequelize.DATE(3),
+				defaultValue: Sequelize.literal('CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)'),
+				field: 'updated_at'
 			}
 		});
 	},
