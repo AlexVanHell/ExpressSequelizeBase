@@ -4,6 +4,11 @@ exports.APP = {
     DESCRIPTION: 'BaseLine description'
 };
 
+exports.JWT = {
+    LIFE_TIME: 86400,
+    KEY: 'J8a94JSJjsas8349jASDSDA67'
+}
+
 exports.DB = {
     MYSQL: {
         DATABASE: 'dbnodebaseline',

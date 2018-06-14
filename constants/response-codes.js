@@ -8,8 +8,16 @@ module.exports = {
 			code: 1001,
 			message: 'Hubo un error interno en el servidor, favor de comunicarse con el administrador'
 		},
-		USER_CREATION_ERROR: {
+		NO_TOKEN_PROVIDED: {
 			code: 1002,
+			message: 'Acceso denegado. No se proporcionó un token en la perición.'
+		},
+		INVALID_TOKEN: {
+			code: 1003,
+			message: 'Acceso denegado. El token enviado en la petición es inválido.'
+		},
+		USER_CREATION_ERROR: {
+			code: 2001,
 			message: 'Hubo un error al crear al usuario ocasionado por el servidor, favor de comunicarse con el administrador'
 		}
 	},

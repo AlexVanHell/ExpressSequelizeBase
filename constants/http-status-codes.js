@@ -6,7 +6,7 @@ module.exports = {
 		},
 		UNAUTHORIZED: {
 			code: 401,
-			message: 'Acceso denegado. No se proporcionó un token válido.'
+			message: 'No tienes permiso de realizar la acción solicitada'
 		},
 		FORBBIDEN: {
 			code: 403,

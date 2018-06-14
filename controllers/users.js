@@ -17,6 +17,21 @@ exports.get = function (req, res, next) {
 		});
 }
 
+exports.getById = function (req, res, next) {
+	const userId = req.params.id;
+	let responseBody = {}
+
+	User.findOne({ where: { id: userId } })
+		.then(function (user) {
+			responseBody = user;
+
+			resHandler.handleSuccess(req, res, responseBody, 'OK');
+		}).catch(function (err) {
+			debug(err);
+			resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR');
+		});
+}
+
 exports.create = function (req, res, next) {
 	const data = req.body;
 	let responseBody = {}
