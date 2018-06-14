@@ -5,10 +5,10 @@ module.exports = (sequelize, DataTypes) => {
 			allowNull: false,
 			autoIncrement: true,
 			primaryKey: true,
-			type: DataTypes.INTEGER
+			type: DataTypes.INTEGER,
 		},
 		name: {
-			type: DataTypes.STRING({ length: 50 }),
+			type: DataTypes.STRING({ length: 80 }),
 			allowNull: false
 		},
 		description: {
@@ -16,25 +16,34 @@ module.exports = (sequelize, DataTypes) => {
 			allowNull: false
 		},
 		active: {
-			type: DataTypes.BOOLEAN
+			type: DataTypes.BOOLEAN,
+			allowNull: false,
 			//defaultValue: true,
 		},
 		visible: {
-			type: DataTypes.BOOLEAN
+			type: DataTypes.BOOLEAN,
+			allowNull: false,
 			//defaultValue: true,
 		},
 		order: {
-			type: DataTypes.INTEGER
+			type: DataTypes.INTEGER,
+			allowNull: false,
 			//defaultValue: 1,
 		},
 		moduleId: {
 			type: DataTypes.INTEGER,
 			allowNull: false,
 			references: {
-				model: 'Module',
-				key: 'id'
+				table: 'module',
+				field: 'id'
 			},
 			field: 'module_id'
+		},
+		fromSystem: {
+			type: DataTypes.BOOLEAN,
+			allowNull: false,
+			//defaultValue: 0,
+			field: 'from_system'
 		},
 		createdAt: {
 			allowNull: false,
@@ -48,10 +57,14 @@ module.exports = (sequelize, DataTypes) => {
 			//defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)'),
 			field: 'updated_at'
 		}
-	}, {});
+	}, {
+			tableName: 'access'
+		});
 	Access.associate = function (models) {
 		// associations can be defined here
 		Access.belongsTo(models.Module, { foreignKey: 'module_id' });
+		Access.belongsToMany(models.Person, { through: models.PersonAccess });
+		Access.belongsToMany(models.Privilege, { through: models.PrivilegeAccess });
 	};
 	return Access;
 };

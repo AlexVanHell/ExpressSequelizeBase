@@ -5,13 +5,13 @@ module.exports = {
 		return queryInterface.bulkInsert('module', [{
 			name: 'Seguridad',
 			description: 'Modulo de seguridad',
+			from_system: 1
 		}], {});
 	},
 
 	down: (queryInterface, Sequelize) => {
-		return queryInterface.bulkDelete('module', [{
-			name: 'Seguridad',
-			description: 'Modulo de seguridad',
-		}], {});
+		return queryInterface.bulkDelete('module', {
+			name: 'Seguridad'
+		}, {}, { primaryKeys: [], primaryKeyAttributes: [] });
 	}
 };

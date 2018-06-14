@@ -16,7 +16,8 @@ exports.DB = {
         PORT: 3306,
         USERNAME: 'root',
         PASSWORD: 'Bitware2016',
-        DIALECT: 'mysql'
+        DIALECT: 'mysql',
+        SEEDER_STORAGE: 'sequelize'
     }
 };
 

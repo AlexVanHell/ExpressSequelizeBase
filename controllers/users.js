@@ -1,13 +1,15 @@
 const debug = require('debug')('controllers:users');
 const resHandler = require('../lib/util/http-response-handler');
 const db = require('../models');
-const User = db.User;
+const Person = db.Person;
+const Access = db.Access;
+const Privilege = db.Privilege;
 
 exports.get = async function (req, res, next) {
 	let responseBody = {}
 
 	try {
-		const users = await User.findAll();
+		const users = await Person.findAll();
 		responseBody = users;
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
@@ -22,7 +24,9 @@ exports.getById = async function (req, res, next) {
 	let responseBody = {}
 
 	try {
-		const user = await User.findById(userId);
+		const user = await Person.findById(userId, {
+			includes: [Access, Privilege]
+		});
 		responseBody = user;
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
@@ -36,7 +40,7 @@ exports.create = function (req, res, next) {
 	const data = req.body;
 	let responseBody = {}
 
-	User.create({
+	Person.create({
 		firstName: data.firstName,
 		lastName: data.lastName,
 		email: data.email,
@@ -56,7 +60,7 @@ exports.update = function (req, res, next) {
 	const data = req.body;
 	let responseBody = {}
 
-	User.update({
+	Person.update({
 		firstName: data.firstName,
 		lastName: data.lastName,
 		email: data.email,

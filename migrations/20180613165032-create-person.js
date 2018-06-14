@@ -25,6 +25,26 @@ module.exports = {
 			phone: {
 				type: Sequelize.STRING
 			},
+			password: {
+				type: Sequelize.STRING({ length: 80 }),
+				allowNull: false
+			},
+			active: {
+				type: Sequelize.BOOLEAN,
+				allowNull: false,
+				defaultValue: true
+			},
+			visible: {
+				type: Sequelize.BOOLEAN,
+				allowNull: false,
+				defaultValue: true
+			},
+			fromSystem: {
+				type: Sequelize.BOOLEAN,
+				allowNull: false,
+				defaultValue: 0,
+				field: 'from_system'
+			},
 			createdAt: {
 				allowNull: false,
 				type: Sequelize.DATE(3),

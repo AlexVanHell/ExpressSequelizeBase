@@ -1,6 +1,8 @@
 'use strict';
+const bcrypt = require('bcrypt-nodejs');
+
 module.exports = (sequelize, DataTypes) => {
-	var User = sequelize.define('User', {
+	var Person = sequelize.define('Person', {
 		id: {
 			allowNull: false,
 			autoIncrement: true,
@@ -20,16 +22,21 @@ module.exports = (sequelize, DataTypes) => {
 		email: {
 			type: DataTypes.STRING({ length: 100 }),
 			allowNull: false,
-			validate: {
-				isEmail: true
-			}
 		},
 		phone: {
 			type: DataTypes.STRING
 		},
-		/* password: {
+		password: {
 			type: DataTypes.STRING({ length: 80 }),
 			allowNull: false
+		},
+		privilegeId: {
+			type: DataTypes.INTEGER,
+			references: {
+				table: 'privilege',
+				field: 'id'
+			},
+			field: 'privilege_id'
 		},
 		active: {
 			type: DataTypes.BOOLEAN,
@@ -40,7 +47,13 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.BOOLEAN,
 			allowNull: false,
 			//defaultValue: true
-		}, */
+		},
+		fromSystem: {
+			type: DataTypes.BOOLEAN,
+			allowNull: false,
+			//defaultValue: 0,
+			field: 'from_system'
+		},
 		createdAt: {
 			allowNull: false,
 			type: DataTypes.DATE(3),
@@ -50,27 +63,29 @@ module.exports = (sequelize, DataTypes) => {
 		updatedAt: {
 			allowNull: false,
 			type: DataTypes.DATE(3),
-			//defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'),
+			//defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)'),
 			field: 'updated_at'
 		}
 	}, {
 			tableName: 'person'
 		});
-	User.associate = function (models) {
+	Person.associate = function (models) {
 		// associations can be defined here
+		Person.hasOne(models.Privilege);
+		Person.hasMany(models.Access, { as: 'access' });
 	};
-	User.prototype.generateHash = function (password) {
+	Person.prototype.generateHash = function (password) {
 		return bcrypt.hash(password, bcrypt.genSaltSync(8));
 	};
-	User.prototype.validPassword = function (password) {
+	Person.prototype.validPassword = function (password) {
 		return bcrypt.compare(password, this.password);
 	}
-	User.prototype.toJSON = function () {
+	Person.prototype.toJSON = function () {
 		var values = Object.assign({}, this.get());
 
 		delete values.password;
 		return values;
 	}
 
-	return User;
+	return Person;
 };

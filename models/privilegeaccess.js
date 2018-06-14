@@ -1,29 +1,42 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-	var Module = sequelize.define('Module', {
+	var PrivilegeAccess = sequelize.define('PrivilegeAccess', {
 		id: {
 			allowNull: false,
 			autoIncrement: true,
 			primaryKey: true,
+			type: DataTypes.INTEGER
+		},
+		permission: {
 			type: DataTypes.INTEGER,
+			allowNull: false,
+			//defaultValue: 1
 		},
-		name: {
-			type: DataTypes.STRING({ length: 80 }),
-			allowNull: false
+		privilegeId: {
+			type: DataTypes.INTEGER,
+			references: {
+				table: 'privilege',
+				field: 'id'
+			},
+			field: 'privilege_id'
 		},
-		description: {
-			type: DataTypes.STRING({ length: 140 }),
-			allowNull: false
+		accessId: {
+			type: DataTypes.INTEGER,
+			references: {
+				table: 'access',
+				field: 'id'
+			},
+			field: 'access_id'
 		},
 		active: {
 			type: DataTypes.BOOLEAN,
 			allowNull: false,
-			//defaultValue: true,
+			//defaultValue: 1
 		},
 		visible: {
 			type: DataTypes.BOOLEAN,
 			allowNull: false,
-			//defaultValue: true,
+			//defaultValue: 1
 		},
 		fromSystem: {
 			type: DataTypes.BOOLEAN,
@@ -44,11 +57,10 @@ module.exports = (sequelize, DataTypes) => {
 			field: 'updated_at'
 		}
 	}, {
-		tableName: 'module'
-	});
-	Module.associate = function (models) {
+			tableName: 'privilege_access'
+		});
+	PrivilegeAccess.associate = function (models) {
 		// associations can be defined here
-		Module.hasMany(models.Access);
 	};
-	return Module;
+	return PrivilegeAccess;
 };

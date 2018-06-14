@@ -11,14 +11,16 @@ module.exports = {
 		password: developmentEngine.PASSWORD,
 		database: developmentEngine.DATABASE,
 		host: developmentEngine.HOST,
-		dialect: developmentEngine.DIALECT
+		dialect: developmentEngine.DIALECT,
+		seederStorage: developmentEngine.SEEDER_STORAGE
 	},
 	test: {
 		username: testEngine.USERNAME,
 		password: testEngine.PASSWORD,
 		database: testEngine.DATABASE,
 		host: testEngine.HOST,
-		dialect: testEngine.DIALECT
+		dialect: testEngine.DIALECT,
+		seederStorage: testEngine.SEEDER_STORAGE
 	},
 	production: {
 		username: productionEngine.USERNAME,
@@ -26,6 +28,7 @@ module.exports = {
 		database: productionEngine.DATABASE,
 		host: productionEngine.HOST,
 		dialect: productionEngine.DIALECT,
+		seederStorage: productionEngine.SEEDER_STORAGE
 		/* dialectOptions: {
 			ssl: {
 				ca: fs.readFileSync(__dirname + '/mysql-ca-master.crt')

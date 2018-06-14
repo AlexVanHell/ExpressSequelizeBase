@@ -9,20 +9,28 @@ module.exports = {
 				type: Sequelize.INTEGER,
 			},
 			name: {
-				type: Sequelize.STRING({ length: 50 }),
+				type: Sequelize.STRING({ length: 80 }),
 				allowNull: false
 			},
 			description: {
 				type: Sequelize.STRING({ length: 140 }),
-				allowNull: false				
+				allowNull: false
 			},
 			active: {
 				type: Sequelize.BOOLEAN,
+				allowNull: false,
 				defaultValue: true,
 			},
 			visible: {
 				type: Sequelize.BOOLEAN,
+				allowNull: false,
 				defaultValue: true,
+			},
+			fromSystem: {
+				type: Sequelize.BOOLEAN,
+				allowNull: false,
+				defaultValue: 0,
+				field: 'from_system'
 			},
 			createdAt: {
 				allowNull: false,
@@ -39,6 +47,6 @@ module.exports = {
 		});
 	},
 	down: (queryInterface, Sequelize) => {
-		return queryInterface.dropTable('modules');
+		return queryInterface.dropTable('module');
 	}
 };

@@ -1,7 +1,7 @@
 'use strict';
 module.exports = {
 	up: (queryInterface, Sequelize) => {
-		return queryInterface.createTable('Rolls', {
+		return queryInterface.createTable('privilege', {
 			id: {
 				allowNull: false,
 				autoIncrement: true,
@@ -9,7 +9,7 @@ module.exports = {
 				type: Sequelize.INTEGER
 			},
 			name: {
-				type: Sequelize.STRING({ length: 50 }),
+				type: Sequelize.STRING({ length: 80 }),
 				allowNull: false
 			},
 			description: {
@@ -18,14 +18,18 @@ module.exports = {
 			},
 			active: {
 				type: Sequelize.BOOLEAN,
+				allowNull: false,
 				defaultValue: true,
 			},
 			visible: {
 				type: Sequelize.BOOLEAN,
+				allowNull: false,
 				defaultValue: true,
 			},
 			fromSystem: {
 				type: Sequelize.BOOLEAN,
+				allowNull: false,
+				defaultValue: 0,
 				field: 'from_system'
 			},
 			createdAt: {
@@ -43,6 +47,6 @@ module.exports = {
 		});
 	},
 	down: (queryInterface, Sequelize) => {
-		return queryInterface.dropTable('Rolls');
+		return queryInterface.dropTable('privilege');
 	}
 };

@@ -9,7 +9,7 @@ module.exports = {
 				type: Sequelize.INTEGER,
 			},
 			name: {
-				type: Sequelize.STRING({ length: 50 }),
+				type: Sequelize.STRING({ length: 80 }),
 				allowNull: false
 			},
 			description: {
@@ -18,15 +18,24 @@ module.exports = {
 			},
 			active: {
 				type: Sequelize.BOOLEAN,
+				allowNull: false,
 				defaultValue: true,
 			},
 			visible: {
 				type: Sequelize.BOOLEAN,
+				allowNull: false,
 				defaultValue: true,
 			},
 			order: {
 				type: Sequelize.INTEGER,
+				allowNull: false,
 				defaultValue: 1,
+			},
+			fromSystem: {
+				type: Sequelize.BOOLEAN,
+				allowNull: false,
+				defaultValue: 0,
+				field: 'from_system'
 			},
 			createdAt: {
 				allowNull: false,

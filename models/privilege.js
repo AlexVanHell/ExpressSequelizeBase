@@ -1,11 +1,11 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
-	var Module = sequelize.define('Module', {
+	var Privilege = sequelize.define('Privilege', {
 		id: {
 			allowNull: false,
 			autoIncrement: true,
 			primaryKey: true,
-			type: DataTypes.INTEGER,
+			type: DataTypes.INTEGER
 		},
 		name: {
 			type: DataTypes.STRING({ length: 80 }),
@@ -44,11 +44,11 @@ module.exports = (sequelize, DataTypes) => {
 			field: 'updated_at'
 		}
 	}, {
-		tableName: 'module'
+		tableName: 'privilege'
 	});
-	Module.associate = function (models) {
+	Privilege.associate = function (models) {
 		// associations can be defined here
-		Module.hasMany(models.Access);
+		Privilege.hasMany(models.PrivilegeAccess);
 	};
-	return Module;
+	return Privilege;
 };
