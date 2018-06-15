@@ -44,8 +44,9 @@ module.exports = (sequelize, DataTypes) => {
 			field: 'updated_at'
 		}
 	}, {
-		tableName: 'module'
-	});
+			tableName: 'module',
+			underscored: true
+		});
 	Module.associate = function (models) {
 		// associations can be defined here
 		Module.hasMany(models.Access);

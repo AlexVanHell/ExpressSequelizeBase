@@ -44,11 +44,17 @@ module.exports = (sequelize, DataTypes) => {
 			field: 'updated_at'
 		}
 	}, {
-		tableName: 'privilege'
+		tableName: 'privilege',
+		underscored: true
 	});
 	Privilege.associate = function (models) {
 		// associations can be defined here
-		Privilege.hasMany(models.PrivilegeAccess);
+		Privilege.belongsToMany(models.Access, { 
+			through: models.PrivilegeAccess,
+			as: 'accesses'
+		});
+
+		Privilege.hasMany(models.Person);
 	};
 	return Privilege;
 };

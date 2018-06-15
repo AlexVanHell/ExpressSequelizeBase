@@ -19,6 +19,10 @@ module.exports = {
 		CONFLICT: {
 			code: 409,
 			message: 'La petición no puede ser procesada debido a un conflicto con el recurso.'
+		}, 
+		UNPROCESSABLE_ENTITY: {
+			code: 422,
+			message: 'La petición no puede ser procesada debido a un conflicto con el recurso.'
 		},
 		INTERNAL_SERVER_ERROR: {
 			code: 500,

@@ -1,5 +1,6 @@
 'use strict';
 const bcrypt = require('bcrypt-nodejs');
+const Promise = require('bluebird');
 
 module.exports = (sequelize, DataTypes) => {
 	var Person = sequelize.define('Person', {
@@ -19,9 +20,45 @@ module.exports = (sequelize, DataTypes) => {
 			allowNull: false,
 			field: 'last_name'
 		},
+		username: {
+			type: DataTypes.STRING({ length: 80 }),
+			allowNull: false,
+			validate: {
+				isUnique: function (value, next) {
+					var self = this;
+					Person.findOne({ where: { username: value, visible: true } })
+						.then(function (user) {
+							// reject if a different user wants to use the same username
+							if (user && self.id !== user.id) {
+								return next('El nombre de usuario ya esta en uso');
+							}
+							return next();
+						})
+						.catch(function (err) {
+							return next(err);
+						});
+				}
+			}
+		},
 		email: {
 			type: DataTypes.STRING({ length: 100 }),
 			allowNull: false,
+			validate: {
+				isUnique: function (value, next) {
+					var self = this;
+					Person.findOne({ where: { email: value, visible: true } })
+						.then(function (user) {
+							// reject if a different user wants to use the same username
+							if (user && self.id !== user.id) {
+								return next('El email ya esta en uso');
+							}
+							return next();
+						})
+						.catch(function (err) {
+							return next(err);
+						});
+				}
+			}
 		},
 		phone: {
 			type: DataTypes.STRING
@@ -67,16 +104,33 @@ module.exports = (sequelize, DataTypes) => {
 			field: 'updated_at'
 		}
 	}, {
-			tableName: 'person'
+			tableName: 'person',
+			underscored: true
 		});
 	Person.associate = function (models) {
 		// associations can be defined here
-		Person.hasOne(models.Privilege);
-		Person.hasMany(models.Access, { as: 'access' });
+		Person.belongsTo(models.Privilege, {
+			as: 'privilege'
+		});
+
+		Person.belongsToMany(models.Access, {
+			through: models.PersonAccess,
+			as: 'accesses'
+		});
+
+		Person.hasMany(models.PersonAccess, {
+			as: 'userAccesses'
+		});
 	};
-	Person.prototype.generateHash = function (password) {
-		return bcrypt.hash(password, bcrypt.genSaltSync(8));
+	Person.generateHash = function (password) {
+		return Promise.promisify(bcrypt.hash)(password, bcrypt.genSaltSync(8), null);
 	};
+	Person.generateUserName = function(username) {
+		Person.findAll()
+			.then(function() {
+
+			});
+	}
 	Person.prototype.validPassword = function (password) {
 		return bcrypt.compare(password, this.password);
 	}

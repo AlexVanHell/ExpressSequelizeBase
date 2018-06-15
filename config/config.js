@@ -12,7 +12,11 @@ module.exports = {
 		database: developmentEngine.DATABASE,
 		host: developmentEngine.HOST,
 		dialect: developmentEngine.DIALECT,
-		seederStorage: developmentEngine.SEEDER_STORAGE
+		seederStorage: developmentEngine.SEEDER_STORAGE,
+		define: {
+			freezeTableNames: true,
+			underscored: false
+		}
 	},
 	test: {
 		username: testEngine.USERNAME,
@@ -20,7 +24,11 @@ module.exports = {
 		database: testEngine.DATABASE,
 		host: testEngine.HOST,
 		dialect: testEngine.DIALECT,
-		seederStorage: testEngine.SEEDER_STORAGE
+		seederStorage: testEngine.SEEDER_STORAGE,
+		define: {
+			freezeTableNames: true,
+			underscored: false
+		}
 	},
 	production: {
 		username: productionEngine.USERNAME,
@@ -28,7 +36,11 @@ module.exports = {
 		database: productionEngine.DATABASE,
 		host: productionEngine.HOST,
 		dialect: productionEngine.DIALECT,
-		seederStorage: productionEngine.SEEDER_STORAGE
+		seederStorage: productionEngine.SEEDER_STORAGE,
+		define: {
+			freezeTableNames: true,
+			underscored: true
+		}
 		/* dialectOptions: {
 			ssl: {
 				ca: fs.readFileSync(__dirname + '/mysql-ca-master.crt')

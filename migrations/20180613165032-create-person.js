@@ -18,6 +18,10 @@ module.exports = {
 				allowNull: false,
 				field: 'last_name'
 			},
+			username: {
+				type: Sequelize.STRING({ length: 80 }),
+				allowNull: false
+			},
 			email: {
 				type: Sequelize.STRING({ length: 100 }),
 				allowNull: false,

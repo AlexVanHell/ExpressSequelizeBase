@@ -58,13 +58,25 @@ module.exports = (sequelize, DataTypes) => {
 			field: 'updated_at'
 		}
 	}, {
-			tableName: 'access'
+			tableName: 'access',
+			underscored: true
 		});
 	Access.associate = function (models) {
 		// associations can be defined here
-		Access.belongsTo(models.Module, { foreignKey: 'module_id' });
-		Access.belongsToMany(models.Person, { through: models.PersonAccess });
-		Access.belongsToMany(models.Privilege, { through: models.PrivilegeAccess });
+		Access.belongsTo(models.Module, {
+			foreignKey: 'module_id',
+			as: 'module'
+		});
+
+		Access.belongsToMany(models.Person, {
+			through: models.PersonAccess,
+		});
+
+		Access.belongsToMany(models.Privilege, {
+			through: models.PrivilegeAccess,
+		});
+
+		Access.hasMany(models.PersonAccess);
 	};
 	return Access;
 };

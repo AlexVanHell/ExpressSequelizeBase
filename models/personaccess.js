@@ -54,10 +54,16 @@ module.exports = (sequelize, DataTypes) => {
 			field: 'updated_at'
 		}
 	}, {
-			tableName: 'person_access'
+			tableName: 'person_access',
+			underscored: true
 		});
 	PersonAccess.associate = function (models) {
 		// associations can be defined here
+		PersonAccess.belongsTo(models.Person);
+
+		PersonAccess.belongsTo(models.Access, {
+			as: 'access'
+		});
 	};
 	return PersonAccess;
 };

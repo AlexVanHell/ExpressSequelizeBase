@@ -14,6 +14,18 @@ if (config.use_env_variable) {
 	var sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
+sequelize.addHook('beforeDefine', (attributes) => {
+	Object.keys(attributes).forEach((name) => {
+		if (typeof attributes[name] !== 'function') {
+			let attribute = attributes[name];
+			const _underscored = attribute.underscored === undefined ? sequelize.options.define.underscored : attribute.underscored;
+			if (attribute.field === undefined && _underscored !== undefined) {
+				attribute.field = sequelize.Utils.underscoredIf(name, _underscored);
+			}
+		}
+	});
+});
+
 fs
 	.readdirSync(__dirname)
 	.filter(file => {
