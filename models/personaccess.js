@@ -37,18 +37,18 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		fromSystem: {
 			type: DataTypes.BOOLEAN,
-			allowNull: false,
+			//allowNull: false,
 			//defaultValue: 0,
 			field: 'from_system'
 		},
 		createdAt: {
-			allowNull: false,
+			//allowNull: false,
 			type: DataTypes.DATE(3),
 			//defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'),
 			field: 'created_at'
 		},
 		updatedAt: {
-			allowNull: false,
+			//allowNull: false,
 			type: DataTypes.DATE(3),
 			//defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)'),
 			field: 'updated_at'

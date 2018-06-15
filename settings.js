@@ -12,10 +12,10 @@ exports.JWT = {
 exports.DB = {
     MYSQL: {
         DATABASE: 'dbnodebaseline',
-        HOST: '192.168.100.2',
+        HOST: 'localhost',
         PORT: 3306,
-        USERNAME: 'root',
-        PASSWORD: 'Bitware2016',
+        USERNAME: 'develop',
+        PASSWORD: 'M1C0ntr4s3n49752',
         DIALECT: 'mysql',
         SEEDER_STORAGE: 'sequelize'
     }
@@ -27,7 +27,7 @@ exports.MAIL_CONFIG = {
     SECURE: false,
     ACCOUNT_EMAIL_ADDRESS: 'fintra.develop@gmail.com',
     ACCOUNT_PASSWORD: 'adminFintra123',
-    USER_NAME: 'Fintra Admin',
+    USER_NAME: 'BaseLine Admin',
     IMAGES_URL: 'http://localhost:3000/images',
     TEMPLATES_DIR: '../../views/mails',
     CC_RECIPIENTS: ['avillarroel@e-bitware.com'/* , 'jegarcia@e-bitware.com' */]

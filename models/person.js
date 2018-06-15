@@ -2,6 +2,8 @@
 const bcrypt = require('bcrypt-nodejs');
 const Promise = require('bluebird');
 
+const util = require('../lib/util');
+
 module.exports = (sequelize, DataTypes) => {
 	var Person = sequelize.define('Person', {
 		id: {
@@ -77,28 +79,28 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		active: {
 			type: DataTypes.BOOLEAN,
-			allowNull: false,
+			//allowNull: false,
 			//defaultValue: true
 		},
 		visible: {
 			type: DataTypes.BOOLEAN,
-			allowNull: false,
+			//allowNull: false,
 			//defaultValue: true
 		},
 		fromSystem: {
 			type: DataTypes.BOOLEAN,
-			allowNull: false,
+			//allowNull: false,
 			//defaultValue: 0,
 			field: 'from_system'
 		},
 		createdAt: {
-			allowNull: false,
+			//allowNull: false,
 			type: DataTypes.DATE(3),
 			//defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'),
 			field: 'created_at'
 		},
 		updatedAt: {
-			allowNull: false,
+			//allowNull: false,
 			type: DataTypes.DATE(3),
 			//defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)'),
 			field: 'updated_at'
@@ -125,11 +127,28 @@ module.exports = (sequelize, DataTypes) => {
 	Person.generateHash = function (password) {
 		return Promise.promisify(bcrypt.hash)(password, bcrypt.genSaltSync(8), null);
 	};
-	Person.generateUserName = function(username) {
-		Person.findAll()
-			.then(function() {
+	Person.generateUsername = function (firstName, lastName) {
+		let username = util.generateUsername(firstName, lastName);
 
-			});
+		return Person.findAll({
+			where: {
+				username: {
+					[sequelize.Op.like]: '%' + username
+				}
+			}
+		}).then(function (users) {
+			if (!users.length) return username;
+
+			let result = username;
+			let counter = 1;
+
+			while (result === username) {
+				result = username + counter
+				counter++;
+			}
+
+			return result;
+		});
 	}
 	Person.prototype.validPassword = function (password) {
 		return bcrypt.compare(password, this.password);

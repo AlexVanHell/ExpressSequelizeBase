@@ -46,7 +46,7 @@ module.exports = {
 			fromSystem: {
 				type: Sequelize.BOOLEAN,
 				allowNull: false,
-				defaultValue: 0,
+				defaultValue: false,
 				field: 'from_system'
 			},
 			createdAt: {
