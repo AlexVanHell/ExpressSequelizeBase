@@ -2,6 +2,7 @@
 const bcrypt = require('bcrypt-nodejs');
 const Promise = require('bluebird');
 
+const constants = require('../constants');
 const util = require('../lib/util');
 
 module.exports = (sequelize, DataTypes) => {
@@ -26,15 +27,15 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.STRING({ length: 80 }),
 			allowNull: false,
 			validate: {
-				isUnique: function (value, next) {
+				isUnique: function (value) {
 					var self = this;
-					Person.findOne({ where: { username: value, visible: true } })
+
+					Person.findOne({ where: { username: value } })
 						.then(function (user) {
 							// reject if a different user wants to use the same username
 							if (user && self.id !== user.id) {
-								return next('El nombre de usuario ya esta en uso');
+								throw new Error(constants.STRINGS.USERNAME_IN_USE);
 							}
-							return next();
 						})
 						.catch(function (err) {
 							return next(err);
@@ -46,15 +47,16 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.STRING({ length: 100 }),
 			allowNull: false,
 			validate: {
-				isUnique: function (value, next) {
-					var self = this;
-					Person.findOne({ where: { email: value, visible: true } })
+				isEmail: true,
+				isUnique (value) {
+					const self = this;
+
+					return Person.findOne({ where: { email: value, visible: true } })
 						.then(function (user) {
-							// reject if a different user wants to use the same username
+							// reject if a different user wants to use the same email
 							if (user && self.id !== user.id) {
-								return next('El email ya esta en uso');
+								throw new Error(constants.STRINGS.EMAIL_IN_USE);
 							}
-							return next();
 						})
 						.catch(function (err) {
 							return next(err);
@@ -109,6 +111,8 @@ module.exports = (sequelize, DataTypes) => {
 			tableName: 'person',
 			underscored: true
 		});
+
+	// Associations
 	Person.associate = function (models) {
 		// associations can be defined here
 		Person.belongsTo(models.Privilege, {
@@ -124,6 +128,16 @@ module.exports = (sequelize, DataTypes) => {
 			as: 'userAccesses'
 		});
 	};
+
+	// Hooks
+	Person.beforeCreate(function(user, options) {
+		return Person.generateHash(user.password)
+			.then(function(hasedPassword) {
+				user.password = hasedPassword;
+			});
+	});
+
+	// Utils
 	Person.generateHash = function (password) {
 		return Promise.promisify(bcrypt.hash)(password, bcrypt.genSaltSync(8), null);
 	};
@@ -133,32 +147,44 @@ module.exports = (sequelize, DataTypes) => {
 		return Person.findAll({
 			where: {
 				username: {
-					[sequelize.Op.like]: '%' + username
+					[sequelize.Op.like]: '%' + username + '%'
 				}
-			}
+			},
+			attributes: ['id', 'username'],
+			raw: true
 		}).then(function (users) {
 			if (!users.length) return username;
 
 			let result = username;
-			let counter = 1;
+			let counter = 0;
 
-			while (result === username) {
-				result = username + counter
+			users = users.filter(x => x.username.length >= username.length);
+
+			while (users[counter] && result === users[counter].username) {
+				result = username + (counter + 1)
 				counter++;
 			}
 
 			return result;
 		});
-	}
+	};
+
+	// Instance Methods
 	Person.prototype.validPassword = function (password) {
 		return bcrypt.compare(password, this.password);
+	};
+	Person.prototype.ownsEmail = function(email) {
+		return this.email === email;
 	}
 	Person.prototype.toJSON = function () {
 		var values = Object.assign({}, this.get());
 
 		delete values.password;
+		delete values['updated_at'];
+		delete values['created_at'];
+		delete values['privilege_id'];
 		return values;
-	}
+	};
 
 	return Person;
 };

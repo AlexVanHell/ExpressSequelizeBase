@@ -9,6 +9,7 @@ router.route('/')
 
 router.route('/:id')
 	.get(controller.getById)
-	.put(controller.update);
+	.put(controller.update)
+	.delete(controller.delete);
 
 module.exports = router;

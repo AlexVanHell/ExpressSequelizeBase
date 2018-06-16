@@ -2,30 +2,35 @@ const debug = require('debug')('controllers:users');
 const Promise = require('bluebird');
 const resHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
+const constants = require('../constants');
 
 const db = require('../models');
+// Models
+/* 
 const Person = db.Person;
 const Access = db.Access;
-const Privilege = db.Privilege;
+const PersonAccess = db.PersonAccess;
+const Privilege = db.Privilege; 
+*/
 
 exports.get = async function (req, res, next) {
 	let responseBody = {};
 
 	try {
-		const rows = await Person.findAll({
+		const rows = await db.Person.findAll({
 			where: { visible: true },
 			attributes: ['id', 'firstName', 'lastName', 'username', 'email', 'phone', 'active', 'createdAt', 'updatedAt'],
 			include: [{
-				model: Privilege,
+				model: db.Privilege,
 				as: 'privilege',
-				attributes: ['id', 'name', 'description']
+				attributes: ['id', 'name']
 			}]
 		});
 		responseBody = rows;
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
-		debug(err);
+		debug('GET', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
 }
@@ -35,131 +40,264 @@ exports.getById = async function (req, res, next) {
 	let responseBody = {};
 
 	try {
-		const item = await Person.findOne({
+		const item = await db.Person.findOne({
 			where: { id: itemId, visible: true },
 			attributes: ['id', 'firstName', 'lastName', 'username', 'email', 'phone', 'active', 'createdAt', 'updatedAt'],
 			include: [{
-				model: Privilege,
+				model: db.Privilege,
 				as: 'privilege',
-				attributes: ['id', 'name', 'description']/* ,
+				attributes: ['id', 'name'],
 				include: [{
-					model: Access,
-					attributes: ['id', 'name', 'description'],
+					model: db.Access,
+					attributes: ['id', 'name'],
+					where: { active: true, visible: true },
+					as: 'accesses',
 					through: {
 						as: 'access',
-						attributes: ['permission']
-					},
-					as: 'accesses'
-				}] */
+						attributes: ['permission'],
+						where: { active: true, visible: true }
+					}
+				}]
 			}, {
-				model: Access,
-				attributes: ['id', 'name', 'description'],
+				model: db.Access,
+				attributes: ['id', 'name'],
+				where: { active: true, visible: true },
+				as: 'accesses',
+				required: false,
 				through: {
 					as: 'access',
-					attributes: ['id', 'permission']
-				},
-				as: 'accesses'
+					attributes: ['permission'],
+					where: { active: true, visible: true }
+				}
 			}]
 		});
 
-		if (item.privilege) {
-			item.accesses = [];
-
-			item.accesses = await Privilege.findById(item.privilege.id, {
-				include: [{
-					model: Access,
-					as: 'accesses',
-					attributes: ['id', 'name', 'description'],
-					through: {
-						as: 'access',
-						attributes: ['permision']
-					}
-				}]
-			}).then(function (privilege) {
-				return privilege.accesses;
-			});
+		if (!item) {
+			const error = {
+				name: 'NOT_FOUND',
+				message: constants.STRINGS.USER_NOT_EXISTS
+			}
+			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
-		responseBody = item;
+		responseBody = item.get({ plain: true }); // Returns the JSON sent to response
+
+		// If user has privilege set accesses from privilege
+		if (responseBody.privilege) {
+			responseBody.accesses = Object.assign([], responseBody.privilege.accesses); // Avoid point to the same memory direction to delete below
+
+			delete responseBody.privilege.accesses;
+		}
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
-		debug(err);
+		debug('GET BY ID', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
 }
 
 exports.create = async function (req, res, next) {
-	const data = req.body;
+	const body = req.body;
 	let responseBody = {};
-	let randomPassword = util.randomString(12);
+	let usernameUpdated = false;
+	let item = {};
 
 	try {
-		const hashedPassword = await Person.generateHash(randomPassword);
-		const username = await Person.generateUsername(data.firstName, data.lastName);
+		let randomPassword = util.randomString(12);
 
-		const item = await Person.create({
-			firstName: data.firstName,
-			lastName: data.lastName,
-			email: data.email,
-			phone: data.phone,
-			password: hashedPassword,
-			username: username,
-			privilegeId: data.privilege && data.privilegeId ? data.privilege.id : null
-		})
+		// Find if email is already registered but is not visible
+		let find = await db.Person.findOne({
+			where: { email: body.email, visible: false },
+			attributes: ['id', 'firstName', 'lastName', 'username', 'email', 'phone', 'createdAt', 'updatedAt']
+		});
 
-		if (!data.accesses) {
-			item.accesses = []
-		} else {
-			if (!data.privilege) {
-				const accessesArr = data.accesses.map(function (x) {
-					return item.addAccess(x.id, { through: { permission: x.access.permission } })
-				});
+		const username = await db.Person.generateUsername(body.firstName, body.lastName);
 
-				item.accesses = await Promise.all(accessesArr);
-			}
+		const dataInsert = {
+			firstName: body.firstName,
+			lastName: body.lastName,
+			email: body.email,
+			phone: body.phone,
+			password: randomPassword,
+			active: (typeof body.active === 'boolean') ? body.active : true,
+			privilegeId: body.privilege && body.privilege.id ? body.privilege.id : null
 		}
 
-		responseBody = item;
+		if (find) {
+			dataInsert.active = true;
+			dataInsert.visible = true;
+			dataInsert.createdAt = new Date();
+			dataInsert.password = await db.Person.generateHash(randomPassword);
+
+			// It will change the username value
+			if (find.firstName !== body.firstName || find.lastName !== find.lastName) {
+				dataInsert.username = username;
+			}
+
+			const result = await db.Person.update(dataInsert, { where: { email: body.email } });
+
+			find = await db.Person.findOne({
+				where: { email: body.email },
+				attributes: ['id', 'firstName', 'lastName', 'username', 'email', 'phone', 'active', 'createdAt', 'updatedAt']
+			});
+
+			item = find;
+		} else {
+			dataInsert.username = username;
+			// Person hook 'breforeCreate' automaticaly encrypts password
+			item = await db.Person.create(dataInsert);
+		}
+
+		if (!body.accesses) item.accesses = [];
+
+		// If request has no 'privilege' attribute, insert or update custom accesses
+		if (!body.privilege || !body.privilege.id) {
+			// Disable all user accesses
+			const disableAccesses = await db.PersonAccess.update({
+				active: false, visible: false
+			}, {
+					where: { personId: item.id }
+				});
+
+			const accessesArr = body.accesses.map(async function (x) {
+				const hasAccess = await item.hasAccess(x.id);
+
+				if (hasAccess) {
+					return db.PersonAccess.update({
+						active: true, visible: true, permission: x.access.permission
+					}, {
+							where: { personId: item.id, accessId: x.id }
+						});
+				} else {
+					return item.addAccess(x.id, { through: { permission: x.access.permission } });
+				}
+			});
+
+			const updateAccesses = await Promise.all(accessesArr);
+		}
+
+		responseBody = item.toJSON();
 
 		const email = await util.emailHandler.sendMail({
-			to: data.email,
+			to: body.email,
 			subject: 'Registro exitoso en la plataforma',
 			body: `
-				<h1>Bienvenido a la plataforma ${data.firstName} ${data.lastName}</h1>
+				<h1>Bienvenido a la plataforma ${body.firstName} ${body.lastName}!</h1>
 				<p>
-					Tu nueva contraseña es: ${randomPassword}
+					Tu nueva contraseña es: 
+					<br>
+					<b>${randomPassword}</b>
 				</p>
 			`
 		});
 
-		resHandler.handleSuccess(req, res, responseBody, 'CREATED', 'USER_CREATED');
+		resHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.USER_CREATED);
 	} catch (err) {
-		debug(err);
+		debug('CREATE', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
 }
 
 exports.update = async function (req, res, next) {
 	const itemId = req.params.id;
-	const data = req.body;
+	const body = req.body;
 	let responseBody = {};
 
 	try {
-		const result = await Person.update({
-			firstName: data.firstName,
-			lastName: data.lastName,
-			email: data.email,
-			phone: data.phone
-		}, {
-				where: { id: itemId }
+		const item = await db.Person.findOne({
+			where: { id: itemId, visible: true },
+			attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'username', 'active', 'createdAt']
+		});
+
+		if (!item) {
+			const error = {
+				name: 'NOT_FOUND',
+				message: constants.STRINGS.USER_NOT_EXISTS
+			}
+			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+		}
+
+		const dataUpdate = {
+			firstName: body.firstName,
+			lastName: body.lastName,
+			phone: body.phone,
+			active: (typeof body.active === 'boolean') ? body.active : true,
+			privilegeId: body.privilege && body.privilege.id ? body.privilege.id : null
+		}
+
+		// Person.prototype.ownsEmail is a instance method defined in Person model
+		if (!item.ownsEmail(body.email)) {
+			dataInsert.email = body.email;
+		}
+
+		const result = await db.Person.update(dataUpdate, {
+			where: { id: itemId }
+		});
+
+		body.updatedAt = new Date();
+
+		if (!body.accesses) item.accesses = [];
+
+		// If request has no 'privilege' attribute insert or update custom accesses
+		if (!body.privilege || !body.privilege.id) {
+			// Disable all user accesses
+			const disableAccesses = await db.PersonAccess.update({
+				active: false, visible: false
+			}, {
+					where: { personId: item.id }
+				});
+
+			const accessesArr = body.accesses.map(async function (x) {
+				const hasAccess = await item.hasAccess(x.id);
+
+				if (hasAccess) {
+					return db.PersonAccess.update({
+						active: true, visible: true, permission: x.access.permission
+					}, {
+							where: { personId: item.id, accessId: x.id }
+						});
+				} else {
+					return item.addAccess(x.id, { through: { permission: x.access.permission } });
+				}
 			});
 
-		responseBody = { affectedCount: result[0], affectedRows: result[1] };
+			const updateAccesses = await Promise.all(accessesArr);
+		}
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK', 'USER_UPDATED');
+		responseBody = body;
+
+		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_UPDATED);
 	} catch (err) {
-		debug(err);
+		debug('UPDATE', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	};
+}
+
+exports.delete = async function (req, res, next) {
+	const itemId = req.params.id;
+	let responseBody = null;
+
+	try {
+		const find = await db.Person.findOne({
+			where: { id: itemId, visible: true },
+			attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'username', 'active', 'visible']
+		});
+
+		if (!find) {
+			const error = {
+				name: 'NOT_FOUND',
+				message: constants.STRINGS.USER_NOT_EXISTS
+			}
+			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+		}
+
+		const result = db.Person.update({ active: false, visible: false }, {
+			where: { id: itemId }
+		});
+
+		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_DELETED);
+	} catch (err) {
+		debug('DELETE', err);
+		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+	}
 }

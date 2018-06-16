@@ -1,9 +1,9 @@
 const fs = require('fs');
 const config = require('../settings').DB;
 
-const developmentEngine = config.MYSQL;
-const testEngine = config.MYSQL;
-const productionEngine = config.MYSQL;
+const developmentEngine = config.DEVELOPMENT.MYSQL;
+const testEngine = config.TEST.MYSQL;
+const productionEngine = config.PRODUCTION.MYSQL;
 
 module.exports = {
 	development: {
