@@ -125,7 +125,7 @@ module.exports = (sequelize, DataTypes) => {
 		});
 
 		Person.hasMany(models.PersonAccess, {
-			as: 'userAccesses'
+			as: 'accessRelation'
 		});
 	};
 

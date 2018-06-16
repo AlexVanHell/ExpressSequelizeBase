@@ -74,7 +74,7 @@ exports.getById = async function (req, res, next) {
 
 		if (!item) {
 			const error = {
-				name: 'NOT_FOUND',
+				name: 'DatabaseNotFound',
 				message: constants.STRINGS.USER_NOT_EXISTS
 			}
 			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
@@ -132,14 +132,10 @@ exports.create = async function (req, res, next) {
 			// It will change the username value
 			if (find.firstName !== body.firstName || find.lastName !== find.lastName) {
 				dataInsert.username = username;
+				usernameUpdated = true;
 			}
 
 			const result = await db.Person.update(dataInsert, { where: { email: body.email } });
-
-			find = await db.Person.findOne({
-				where: { email: body.email },
-				attributes: ['id', 'firstName', 'lastName', 'username', 'email', 'phone', 'active', 'createdAt', 'updatedAt']
-			});
 
 			item = find;
 		} else {
@@ -176,8 +172,6 @@ exports.create = async function (req, res, next) {
 			const updateAccesses = await Promise.all(accessesArr);
 		}
 
-		responseBody = item.toJSON();
-
 		const email = await util.emailHandler.sendMail({
 			to: body.email,
 			subject: 'Registro exitoso en la plataforma',
@@ -190,6 +184,13 @@ exports.create = async function (req, res, next) {
 				</p>
 			`
 		});
+
+		responseBody = {
+			id: item.id,
+			username: usernameUpdated ? username : item.username,
+			createdAt: new Date(),
+			updatedAt: new Date()
+		};
 
 		resHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.USER_CREATED);
 	} catch (err) {
@@ -211,7 +212,7 @@ exports.update = async function (req, res, next) {
 
 		if (!item) {
 			const error = {
-				name: 'NOT_FOUND',
+				name: 'DatabaseNotFound',
 				message: constants.STRINGS.USER_NOT_EXISTS
 			}
 			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
@@ -264,7 +265,9 @@ exports.update = async function (req, res, next) {
 			const updateAccesses = await Promise.all(accessesArr);
 		}
 
-		responseBody = body;
+		responseBody = {
+			updatedAt: new Date()
+		};
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_UPDATED);
 	} catch (err) {
@@ -280,12 +283,12 @@ exports.delete = async function (req, res, next) {
 	try {
 		const find = await db.Person.findOne({
 			where: { id: itemId, visible: true },
-			attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'username', 'active', 'visible']
+			attributes: ['id']
 		});
 
 		if (!find) {
 			const error = {
-				name: 'NOT_FOUND',
+				name: 'DatabaseNotFound',
 				message: constants.STRINGS.USER_NOT_EXISTS
 			}
 			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
@@ -298,6 +301,37 @@ exports.delete = async function (req, res, next) {
 		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_DELETED);
 	} catch (err) {
 		debug('DELETE', err);
+		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+	}
+}
+
+exports.lock = async function (req, res, next) {
+	const itemId = req.params.id;
+	let responseBody = null;
+
+	try {
+		const find = await db.Person.findOne({
+			where: { id: itemId, visible: true },
+			attributes: ['id']
+		});
+
+		if (!find) {
+			const error = {
+				name: 'DatabaseNotFound',
+				message: constants.STRINGS.USER_NOT_EXISTS
+			}
+			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+		}
+
+		const result = db.Person.update({ active: !find.active }, {
+			where: { id: itemId }
+		});
+
+		let constantKey = find.active ? 'USER_LOCKED' : 'USER_UNLOCKED';
+
+		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
+	} catch (err) {
+		debug('LOCK', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
 }

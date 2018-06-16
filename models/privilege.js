@@ -9,7 +9,23 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		name: {
 			type: DataTypes.STRING({ length: 80 }),
-			allowNull: false
+			allowNull: false,
+			validate: {
+				isUnique (value) {
+					const self = this;
+
+					return Privilege.findOne({ where: { name: value, visible: true } })
+						.then(function (user) {
+							// reject if a different user wants to use the same email
+							if (user && self.id !== user.id) {
+								throw new Error(constants.STRINGS.NAME_IN_USE);
+							}
+						})
+						.catch(function (err) {
+							return next(err);
+						});
+				}
+			}
 		},
 		description: {
 			type: DataTypes.STRING({ length: 140 }),
@@ -47,12 +63,17 @@ module.exports = (sequelize, DataTypes) => {
 		tableName: 'privilege',
 		underscored: true
 	});
+	// Associations
 	Privilege.associate = function (models) {
 		// associations can be defined here
 		Privilege.belongsToMany(models.Access, { 
 			through: models.PrivilegeAccess,
 			as: 'accesses'
 		});
+
+		Privilege.hasMany(models.PrivilegeAccess, {
+			as: 'accessRelation'
+		})
 
 		Privilege.hasMany(models.Person);
 	};

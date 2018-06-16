@@ -1,21 +1,30 @@
 const debug = require('debug')('controllers:users');
+const Promise = require('bluebird');
 const resHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
+const constants = require('../constants');
 
 const db = require('../models');
+// Models
+/* 
+const Privilege = db.Privilege; 
 const Access = db.Access;
-const Privilege = db.Privilege;
+const PrivilegeAccess = db.PrivilegeAccess;
+*/
 
 exports.get = async function (req, res, next) {
 	let responseBody = {};
 
 	try {
-		const rows = await Privilege.findAll({ where: { visible: true } });
+		const rows = await db.Privilege.findAll({
+			where: { visible: true },
+			attributes: ['id', 'name', 'description', 'active', 'createdAt', 'updatedAt'],
+		});
 		responseBody = rows;
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
-		debug(err);
+		debug('GET', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
 }
@@ -25,81 +34,239 @@ exports.getById = async function (req, res, next) {
 	let responseBody = {};
 
 	try {
-		const item = await Privilege.findOne({
+		const item = await db.Privilege.findOne({
 			where: { id: itemId, visible: true },
 			attributes: ['id', 'name', 'description', 'active', 'createdAt', 'updatedAt'],
 			include: [{
-				model: Privilege,
-				as: 'privilege',
-				attributes: ['id', 'name', 'description'],
-				include: [{
-					model: Access,
-					attributes: ['id', 'name', 'description'],
-					through: {
-						as: 'access',
-						attributes: ['id', 'permission']
-					},
-					as: 'accesses'
-				}]
-			}, {
-				model: Access,
-				attributes: ['id', 'name', 'description'],
+				model: db.Access,
+				attributes: ['id', 'name'],
+				where: { active: true, visible: true },
+				as: 'accesses',
+				required: false,
 				through: {
 					as: 'access',
-					attributes: ['id', 'permission']
-				},
-				as: 'accesses'
+					attributes: ['permission'],
+					where: { active: true, visible: true }
+				}
 			}]
 		});
 
-		responseBody = item;
+		if (!item) {
+			const error = {
+				name: 'DatabaseNotFound',
+				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
+			}
+			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+		}
+
+		responseBody = item.get({ plain: true }); // Returns the JSON sent to response
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
-		debug(err);
+		debug('GET BY ID', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
 }
 
 exports.create = async function (req, res, next) {
-	const data = req.body;
+	const body = req.body;
 	let responseBody = {};
+	let item = {};
 
 	try {
-		const item = await Privilege.create({
-			name: data.name,
-			description: data.description
+		// Find if privilege with name = body.name is already registered but is not visible
+		let find = await db.Privilege.findOne({
+			where: { name: body.name, visible: false },
+			attributes: ['id', 'name', 'description', 'createdAt', 'updatedAt']
 		});
 
-		responseBody = item;
+		const dataInsert = {
+			name: body.name,
+			description: body.description,
+			active: (typeof body.active === 'boolean') ? body.active : true
+		}
 
-		resHandler.handleSuccess(req, res, responseBody, 'CREATED', 'PRIVILEGE_CREATED');
+		if (find) {
+			dataInsert.active = true;
+			dataInsert.visible = true;
+			dataInsert.createdAt = new Date();
+
+			const result = await db.Privilege.update(dataInsert, { where: { email: body.email } });
+
+			item = find;
+		} else {
+			item = await db.Privilege.create(dataInsert);
+		}
+
+		if (!body.accesses) item.accesses = [];
+
+		// Disable all privilege accesses
+		const disableAccesses = await db.PrivilegeAccess.update({
+			active: false, visible: false
+		}, {
+				where: { privilegeId: item.id }
+			});
+
+		const accessesArr = body.accesses.map(async function (x) {
+			const hasAccess = await item.hasAccess(x.id);
+
+			if (hasAccess) {
+				return db.PrivilegeAccess.update({
+					active: true, visible: true, permission: x.access.permission
+				}, {
+						where: { privilegeId: item.id, accessId: x.id }
+					});
+			} else {
+				return item.addAccess(x.id, { through: { permission: x.access.permission } });
+			}
+		});
+
+		const updateAccesses = await Promise.all(accessesArr);
+
+		responseBody = { 
+			id: item.id, 
+			createdAt: new Date(), 
+			updatedAt: new Date() 
+		};
+
+		resHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.PRIVILEGE_CREATED);
 	} catch (err) {
-		debug(err);
+		debug('CREATE', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
 }
 
 exports.update = async function (req, res, next) {
 	const itemId = req.params.id;
-	const data = req.body;
+	const body = req.body;
 	let responseBody = {};
 
 	try {
-		const result = await Privilege.update({
-			firstName: data.firstName,
-			lastName: data.lastName,
-			email: data.email,
-			phone: data.phone
-		}, {
-				where: { id: itemId }
+		const item = await db.Privilege.findOne({
+			where: { id: itemId, visible: true },
+			attributes: ['id', 'name', 'description', 'active', 'createdAt']
+		});
+
+		if (!item) {
+			const error = {
+				name: 'DatabaseNotFound',
+				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
+			}
+			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+		}
+
+		const dataUpdate = {
+			firstName: body.firstName,
+			lastName: body.lastName,
+			phone: body.phone,
+			active: (typeof body.active === 'boolean') ? body.active : true,
+			privilegeId: body.privilege && body.privilege.id ? body.privilege.id : null
+		}
+
+		// Person.prototype.ownsEmail is a instance method defined in Person model
+		if (!item.ownsEmail(body.email)) {
+			dataInsert.email = body.email;
+		}
+
+		const result = await db.Privilege.update(dataUpdate, {
+			where: { id: itemId }
+		});
+
+		if (!body.accesses) item.accesses = [];
+
+		// If request has no 'privilege' attribute insert or update custom accesses
+		if (!body.privilege || !body.privilege.id) {
+			// Disable all user accesses
+			const disableAccesses = await db.PrivilegeAccess.update({
+				active: false, visible: false
+			}, {
+					where: { personId: item.id }
+				});
+
+			const accessesArr = body.accesses.map(async function (x) {
+				const hasAccess = await item.hasAccess(x.id);
+
+				if (hasAccess) {
+					return db.PrivilegeAccess.update({
+						active: true, visible: true, permission: x.access.permission
+					}, {
+							where: { personId: item.id, accessId: x.id }
+						});
+				} else {
+					return item.addAccess(x.id, { through: { permission: x.access.permission } });
+				}
 			});
 
-		responseBody = { affectedCount: result[0], affectedRows: result[1] };
+			const updateAccesses = await Promise.all(accessesArr);
+		}
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK', 'PRIVILEGE_UPDATED');
+		responseBody = {
+			updatedAt: new Date()
+		};
+
+		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_UPDATED);
 	} catch (err) {
-		debug(err);
+		debug('UPDATE', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	};
+}
+
+exports.delete = async function (req, res, next) {
+	const itemId = req.params.id;
+	let responseBody = null;
+
+	try {
+		const find = await db.Privilege.findOne({
+			where: { id: itemId, visible: true },
+			attributes: ['id']
+		});
+
+		if (!find) {
+			const error = {
+				name: 'DatabaseNotFound',
+				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
+			}
+			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+		}
+
+		const result = db.Privilege.update({ active: false, visible: false }, {
+			where: { id: itemId }
+		});
+
+		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_DELETED);
+	} catch (err) {
+		debug('DELETE', err);
+		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+	}
+}
+
+exports.lock = async function (req, res, next) {
+	const itemId = req.params.id;
+	let responseBody = null;
+
+	try {
+		const find = await db.Privilege.findOne({
+			where: { id: itemId, visible: true },
+			attributes: ['id']
+		});
+
+		if (!find) {
+			const error = {
+				name: 'DatabaseNotFound',
+				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
+			}
+			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+		}
+
+		const result = db.Privilege.update({ active: !find.active }, {
+			where: { id: itemId }
+		});
+
+		let constantKey = find.active ? 'PRIVILEGE_LOCKED' : 'PRIVILEGE_UNLOCKED';
+
+		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
+	} catch (err) {
+		debug('LOCK', err);
+		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+	}
 }

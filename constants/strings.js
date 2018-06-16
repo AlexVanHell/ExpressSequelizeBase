@@ -9,11 +9,15 @@ module.exports = {
 	USER_CREATED: 'Usuario creado.',
     USER_UPDATED:  'Usuario actualizado.',
     USER_DELETED:  'Usuario eliminado.',
+    USER_LOCKED:  'Usuario bloqueado.',
+    USER_UNLOCKED:  'Usuario desbloqueado.',
     USER_NOT_EXISTS:  'El usuario solicitado no existe o ha sido borado.',
     // Privilege Model Constants
     PRIVILEGE_CREATED: 'Privilegio actualizado.',
     PRIVILEGE_UPDATED: 'Privilegio actualizado.',
     PRIVILEGE_DELETED: 'Privilegio eliminado.',
+    PRIVILEGE_LOCKED: 'Privilegio bloqueado.',
+    PRIVILEGE_UNLOCKED: 'Privilegio desbloqueado.',
     PRIVILEGE_NOT_EXISTS:  'El privilegio solicitado no existe o ha sido borado.',
 
 }
