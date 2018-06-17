@@ -1,4 +1,5 @@
 const debug = require('debug')('controllers:users');
+const crypto = require('crypto');
 const Promise = require('bluebird');
 
 const resHandler = require('../lib/util/http-response-handler');
@@ -176,11 +177,7 @@ exports.create = async function (req, res, next) {
 			const updateAccesses = await Promise.all(accessesArr);
 		}
 
-		const tokenObj = await db.Person.findById(item.id, {
-			attributes: ['id', 'username', 'email', 'password']
-		});
-
-		const tokenKey = await auth.create(tokenObj, tokenObj.get({ plain: true }).password);
+		const tokenKey = crypto.randomBytes(16).toString('hex');
 
 		const createToken = await db.Token.create({
 			value: tokenKey,
@@ -189,7 +186,7 @@ exports.create = async function (req, res, next) {
 			type: 1 // 1: Email verification
 		});
 
-		const url = `http://${req.headers.host}/verify?token=${tokenKey}`;
+		const url = `http://${req.headers.host}/verification?token=${tokenKey}`;
 
 		const email = await util.emailHandler.sendMail({
 			to: body.email,
@@ -215,7 +212,7 @@ exports.create = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		resHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.USER_CREATED);
+		resHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.USER_CREATED + item.email);
 	} catch (err) {
 		debug('CREATE', err);
 		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
