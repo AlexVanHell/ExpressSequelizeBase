@@ -1,5 +1,6 @@
-const debug = require('debug')('controllers:users');
+const debug = require('debug')('controllers:privileges');
 const Promise = require('bluebird');
+
 const resHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
 const constants = require('../constants');

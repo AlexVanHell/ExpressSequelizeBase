@@ -71,6 +71,11 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.STRING({ length: 80 }),
 			allowNull: false
 		},
+		verified: {
+			type: DataTypes.BOOLEAN,
+			//allowNull: false,
+			//defaultValue: true
+		},
 		privilegeId: {
 			type: DataTypes.INTEGER,
 			references: {

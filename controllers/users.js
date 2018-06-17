@@ -1,8 +1,11 @@
 const debug = require('debug')('controllers:users');
 const Promise = require('bluebird');
+
 const resHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
 const constants = require('../constants');
+const settings = require('../settings');
+const auth = require('../lib/auth');
 
 const db = require('../models');
 // Models
@@ -126,6 +129,7 @@ exports.create = async function (req, res, next) {
 		if (find) {
 			dataInsert.active = true;
 			dataInsert.visible = true;
+			dataInsert.verified = false;
 			dataInsert.createdAt = new Date();
 			dataInsert.password = await db.Person.generateHash(randomPassword);
 
@@ -172,15 +176,34 @@ exports.create = async function (req, res, next) {
 			const updateAccesses = await Promise.all(accessesArr);
 		}
 
+		const tokenObj = await db.Person.findById(item.id, {
+			attributes: ['id', 'username', 'email', 'password']
+		});
+
+		const tokenKey = await auth.create(tokenObj, tokenObj.get({ plain: true }).password);
+
+		const createToken = await db.Token.create({
+			value: tokenKey,
+			email: item.email,
+			personId: item.id,
+			type: 1 // 1: Email verification
+		});
+
+		const url = `http://${req.headers.host}/verify?token=${tokenKey}`;
+
 		const email = await util.emailHandler.sendMail({
 			to: body.email,
 			subject: 'Registro exitoso en la plataforma',
 			body: `
-				<h1>Bienvenido a la plataforma ${body.firstName} ${body.lastName}!</h1>
+				<h1>Bienvenido a ${settings.APP.NAME} ${body.firstName} ${body.lastName}!</h1>
 				<p>
-					Tu nueva contraseña es: 
+					Haz click sobre el siguiente enlace para activar tu cuenta:
 					<br>
-					<b>${randomPassword}</b>
+					<b>
+						<a href="${url}">
+							${url}
+						</a>
+					</b>
 				</p>
 			`
 		});
