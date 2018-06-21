@@ -7,6 +7,13 @@ module.exports = {
     EMAIL_ALREADY_VERIFIED: 'La dirección de correo electrónico ya habia sido verificada.',
     PROBLEM_SENDING_EMAIL: 'Hubo un problema para enviar el email a: ',
     USERNAME_IN_USE: 'El nombre de usuario ya esta en uso.',
+    USER_NOT_FOUND_BY_TOKEN: 'No se encontro ningun usuario con el token proporcionado.',
+    INVALID_VERIFICATION_TOKEN: 'El token de verificación no es válido, o ya ha sido utilizado.',
+    TOKEN_EXPIRED: 'El token de verificación ha expirado.',
+    LOGIN_SUCCESS: 'Bienvenido ',
+    LOGIN_FAILED: 'Usuario y/o contraseña incorrectos.',
+    USER_DEACTIVATED: 'Tu usuario se encuentra desactivado actualmente, comunicate con un administrador.',
+    USER_NOT_VERIFIED: 'No has verifícado tu dirección de correo electrónico.',
 
     NAME_IN_USE: 'El nombre ya lo tiene otro elemento.',
 
@@ -24,5 +31,4 @@ module.exports = {
     PRIVILEGE_LOCKED: 'Privilegio bloqueado.',
     PRIVILEGE_UNLOCKED: 'Privilegio desbloqueado.',
     PRIVILEGE_NOT_EXISTS:  'El privilegio solicitado no existe o ha sido borado.',
-
 }

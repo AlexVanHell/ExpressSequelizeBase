@@ -14,8 +14,8 @@ if (config.use_env_variable) {
 	var sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
-sequelize.addHook('beforeDefine', (attributes) => {
-	Object.keys(attributes).forEach((name) => {
+sequelize.addHook('beforeDefine', function(attributes) {
+	Object.keys(attributes).forEach(function (name) {
 		if (typeof attributes[name] !== 'function') {
 			let attribute = attributes[name];
 			const _underscored = attribute.underscored === undefined ? sequelize.options.define.underscored : attribute.underscored;

@@ -12,10 +12,9 @@ module.exports = {
 				type: Sequelize.TEXT,
 				allowNull: false
 			},
-			personId: {
-				type: Sequelize.INTEGER,
-				allowNull: true,
-				field: 'person_id'
+			email: {
+				type: Sequelize.STRING({ length: 100 }),
+				allowNull: true
 			},
 			verified: {
 				type: Sequelize.BOOLEAN,
@@ -25,6 +24,11 @@ module.exports = {
 			type: {
 				type: Sequelize.INTEGER,
 				allowNull: false
+			},
+			personId: {
+				type: Sequelize.INTEGER,
+				allowNull: true,
+				field: 'person_id'
 			},
 			active: {
 				type: Sequelize.BOOLEAN,

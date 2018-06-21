@@ -11,6 +11,7 @@ module.exports = {
 			email: 'edevelop@e-bitware.com',
 			phone: '5555555555',
 			from_system: 1,
+			verified: true,
 			password: bcrypt.hashSync('admin123', bcrypt.genSaltSync(8), null)
 		}, {
 			id: 2,
@@ -20,6 +21,7 @@ module.exports = {
 			email: 'avillarroel@e-bitware.com',
 			phone: '5555555555',
 			from_system: 1,
+			verified: true,
 			password: bcrypt.hashSync('admin123', bcrypt.genSaltSync(8), null)
 		}], {});
 	},

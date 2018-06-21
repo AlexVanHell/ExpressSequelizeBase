@@ -176,7 +176,7 @@ module.exports = (sequelize, DataTypes) => {
 
 	// Instance Methods
 	Person.prototype.validPassword = function (password) {
-		return bcrypt.compare(password, this.password);
+		return Promise.promisify(bcrypt.compare)(password, this.password);
 	};
 	Person.prototype.ownsEmail = function(email) {
 		return this.email === email;
@@ -184,7 +184,7 @@ module.exports = (sequelize, DataTypes) => {
 	Person.prototype.toJSON = function () {
 		var values = Object.assign({}, this.get());
 
-		delete values.password;
+		delete values['password'];
 		delete values['updated_at'];
 		delete values['created_at'];
 		delete values['privilege_id'];

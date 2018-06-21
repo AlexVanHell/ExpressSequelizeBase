@@ -6,7 +6,6 @@ const resHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
 const constants = require('../constants');
 const settings = require('../settings');
-const auth = require('../lib/auth');
 
 const db = require('../models');
 // Models
@@ -30,6 +29,7 @@ exports.get = async function (req, res, next) {
 				attributes: ['id', 'name']
 			}]
 		});
+
 		responseBody = rows;
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
@@ -51,11 +51,14 @@ exports.getById = async function (req, res, next) {
 				model: db.Privilege,
 				as: 'privilege',
 				attributes: ['id', 'name'],
+				where: { active: true, visible: true },
+				required: false,
 				include: [{
 					model: db.Access,
+					as: 'accesses',
 					attributes: ['id', 'name'],
 					where: { active: true, visible: true },
-					as: 'accesses',
+					required: false,
 					through: {
 						as: 'access',
 						attributes: ['permission'],
@@ -64,9 +67,9 @@ exports.getById = async function (req, res, next) {
 				}]
 			}, {
 				model: db.Access,
+				as: 'accesses',
 				attributes: ['id', 'name'],
 				where: { active: true, visible: true },
-				as: 'accesses',
 				required: false,
 				through: {
 					as: 'access',
@@ -77,11 +80,10 @@ exports.getById = async function (req, res, next) {
 		});
 
 		if (!item) {
-			const error = {
-				name: 'DatabaseNotFound',
+			throw {
+				name: 'NotFound',
 				message: constants.STRINGS.USER_NOT_EXISTS
 			}
-			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		responseBody = item.get({ plain: true }); // Returns the JSON sent to response
@@ -96,7 +98,15 @@ exports.getById = async function (req, res, next) {
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET BY ID', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		let httpError = 'INTERNAL_SERVER_ERROR';
+		let errorMessage = '';
+
+		if (err.name === 'NotFound') {
+			httpError = 'NOT_FOUND';
+			errorMessage = err.message;
+		}
+
+		resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
 }
 
@@ -140,7 +150,7 @@ exports.create = async function (req, res, next) {
 				usernameUpdated = true;
 			}
 
-			const result = await db.Person.update(dataInsert, { where: { email: body.email } });
+			const updateResult = await db.Person.update(dataInsert, { where: { email: body.email } });
 
 			item = find;
 		} else {
@@ -231,11 +241,10 @@ exports.update = async function (req, res, next) {
 		});
 
 		if (!item) {
-			const error = {
-				name: 'DatabaseNotFound',
+			throw {
+				name: 'NotFound',
 				message: constants.STRINGS.USER_NOT_EXISTS
 			}
-			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		const dataUpdate = {
@@ -292,7 +301,15 @@ exports.update = async function (req, res, next) {
 		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_UPDATED);
 	} catch (err) {
 		debug('UPDATE', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		let httpError = 'INTERNAL_SERVER_ERROR';
+		let errorMessage = '';
+
+		if (err.name === 'NotFound') {
+			httpError = 'NOT_FOUND';
+			errorMessage = err.message;
+		}
+
+		resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	};
 }
 
@@ -307,21 +324,29 @@ exports.delete = async function (req, res, next) {
 		});
 
 		if (!find) {
-			const error = {
-				name: 'DatabaseNotFound',
+			throw {
+				name: 'NotFound',
 				message: constants.STRINGS.USER_NOT_EXISTS
 			}
 			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
-		const result = db.Person.update({ active: false, visible: false }, {
+		const updateResult = db.Person.update({ active: false, visible: false }, {
 			where: { id: itemId }
 		});
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_DELETED);
 	} catch (err) {
 		debug('DELETE', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		let httpError = 'INTERNAL_SERVER_ERROR';
+		let errorMessage = '';
+
+		if (err.name === 'NotFound') {
+			httpError = 'NOT_FOUND';
+			errorMessage = err.message;
+		}
+
+		resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
 }
 
@@ -336,14 +361,13 @@ exports.lock = async function (req, res, next) {
 		});
 
 		if (!find) {
-			const error = {
-				name: 'DatabaseNotFound',
+			throw {
+				name: 'NotFound',
 				message: constants.STRINGS.USER_NOT_EXISTS
 			}
-			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
-		const result = db.Person.update({ active: !find.active }, {
+		const updateResult = db.Person.update({ active: !find.active }, {
 			where: { id: itemId }
 		});
 
@@ -352,6 +376,14 @@ exports.lock = async function (req, res, next) {
 		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
 	} catch (err) {
 		debug('LOCK', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		let httpError = 'INTERNAL_SERVER_ERROR';
+		let errorMessage = '';
+
+		if (err.name === 'NotFound') {
+			httpError = 'NOT_FOUND';
+			errorMessage = err.message;
+		}
+
+		resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
 }

@@ -1,4 +1,5 @@
-const debug = require('debug')('controllers:users');
+const debug = require('debug')('controllers:verifications');
+const crypto = require('crypto');
 const Promise = require('bluebird');
 
 const resHandler = require('../lib/util/http-response-handler');
@@ -9,72 +10,87 @@ const auth = require('../lib/auth');
 
 const db = require('../models');
 
+const tokenExpirationLimit = 6 * 60 * 60 * 1000; // 6hrs
+
 exports.verifyEmail = async function (req, res, next) {
     const token = req.query.token;
-    let error = {
-        title: 'El token ha expirado.',
-        body: 'El token de verificación ha expirado.'
-    };
+    const loginUrl = 'http://' + req.headers.host + '/login';
+    let responseBody = {};
 
     try {
         const find = await db.Token.findOne({
             where: { value: token, type: 1, visible: true, active: true },
-            attributes: ['id', 'value', 'email', 'verified', 'personId'],
+            attributes: ['id', 'value', 'email', 'verified', 'active', 'createdAt'],
+            include: [{
+                model: db.Person,
+                as: 'person',
+                attributes: ['id', 'username', 'email', 'verified', 'firstName', 'lastName'],
+                where: { visible: true },
+                required: false
+            }]
         });
 
         if (!find) {
-            error = {
-                title: 'Error al verificar el email.',
-                body: 'El token de verificación no es válido, puede que haya expirado.'
+            throw {
+                name: 'NotFound',
+                message: constants.STRINGS.INVALID_VERIFICATION_TOKEN
             };
-
-            throw new Error('NOT_FOUND');
         }
 
-        const person = await db.Person.findOne({ id: find.personId, visible: true }, {
-            attributes: ['id', 'username', 'email', 'verified', 'firstName']
-        });
-
-        if (!person) {
-            error = {
-                title: 'Usuario no encontrado.',
-                body: 'No se encontro ningun usuario con el token proporcionado.'
-            }
-
-            throw new Error('NOT_FOUND');
+        if (tokenExpirationLimit <= new Date() - find.createdAt ) {
+            throw {
+                name: 'SourceExpired',
+                message: constants.STRINGS.TOKEN_EXPIRED
+            };
         }
 
-        if (person.verified) {
-            error = {
-                title: 'Usuario verificado.',
-                body: 'El usuario ya ha sido verificado.'
+        if (!find.person) {
+            throw {
+                name: 'NotFound',
+                message: constants.STRINGS.USER_NOT_FOUND_BY_TOKEN
             };
-
-            throw new Error('VERIFIED');
         }
 
         const updateToken = await db.Token.update({ verified: true, active: false }, {
             where: { id: find.id }
         });
 
+        if (find.person.verified) {
+            throw {
+                name: 'Verified',
+                message: constants.STRINGS.EMAIL_ALREADY_VERIFIED
+            };
+        }
+
         const updateUser = await db.Person.update({ verified: true }, {
-            where: { id: person.id }
+            where: { id: find.person.id }
         });
 
-        res.render('verification', {
-            title: settings.APP.NAME,
+        responseBody = {
             firstName: find.firstName,
-            url: 'http://' + req.headers.host + '/login'
-        });
+            lastName: find.lastName
+        }
+
+        resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFIED);
     } catch (err) {
-        res.render('verification', { error: error });
+        debug('VERIFY EMAIL', err);
+
+        let httpError = 'INTERNAL_SERVER_ERROR';
+        let errorMessage = '';
+        const errorLabels = ['NotFound', 'Verified', 'SourceExpired'];
+
+        if (err.name && errorLabels.indexOf(err.name) > -1) {
+            httpError = err.name !== 'NotFound' ? 'CONFLICT' : 'NOT_FOUND';
+            errorMessage = err.message;
+        }
+
+        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
     }
 }
 
-exports.resendVerificationToken = async function (req, res, next) {
+exports.sendEmailVerificationToken = async function (req, res, next) {
     const body = req.body;
     let responseBody = {}
-    let error = null;
 
     try {
         const find = await db.Person.findOne({
@@ -83,19 +99,17 @@ exports.resendVerificationToken = async function (req, res, next) {
         });
 
         if (!find) {
-            error = {
-                name: 'EMAIL_NOT_EXISTS',
+            throw {
+                name: 'NotFound',
                 message: constants.STRINGS.EMAIL_NOT_EXISTS
             }
-            return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
         }
 
         if (find.verified) {
-            error = {
-                name: 'EMAIL_ALREADY_VERIFIED',
+            throw {
+                name: 'EmailAlreadyVerified',
                 message: constants.STRINGS.EMAIL_ALREADY_VERIFIED
             }
-            return resHandler.handleError(req, res, error, 'BAD_REQUEST', 'BAD_REQUEST', error.message);
         }
 
         const tokenKey = crypto.randomBytes(16).toString('hex');
@@ -111,24 +125,35 @@ exports.resendVerificationToken = async function (req, res, next) {
 
         const email = await util.emailHandler.sendMail({
             to: find.email,
-            subject: 'Verificación de correo electronico',
+            subject: 'Reenvío de verificación de correo electrónico.',
             body: `
-            <h1>Hola ${find.firstName} ${find.lastName}!</h1>
-            <p>
-                Haz click sobre el siguiente enlace para verificar tu correo electrónico:
-                <br>
-                <b>
-                    <a href="${url}">
-                        ${url}
-                    </a>
-                </b>
-            </p>
-        `
+                <h1>Hola ${find.firstName} ${find.lastName}!</h1>
+                <p>
+                    Haz click sobre el siguiente enlace para verificar tu correo electrónico:
+                    <br>
+                    <b>
+                        <a href="${url}">
+                            ${url}
+                        </a>
+                    </b>
+                </p>
+            `
         });
 
         resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFICATION_SENT + find.email);
     } catch (err) {
-        return resHandler.handleError(req, res, error, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+        debug('GET BY ID', err);
+
+        let httpError = 'INTERNAL_SERVER_ERROR';
+        let errorMessage = '';
+        const errorLabels = ['NotFound', 'EmailAlreadyVerified'];
+
+        if (err.name && errorLabels.indexOf(err.name) > -1) {
+            httpError = err.name === 'EmailAlreadyVerified' ? 'CONFLICT' : 'NOT_FOUND';
+            errorMessage = err.message;
+        }
+
+        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
     }
 }
 

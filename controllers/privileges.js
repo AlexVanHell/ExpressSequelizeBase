@@ -21,6 +21,7 @@ exports.get = async function (req, res, next) {
 			where: { visible: true },
 			attributes: ['id', 'name', 'description', 'active', 'createdAt', 'updatedAt'],
 		});
+
 		responseBody = rows;
 
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
@@ -53,11 +54,10 @@ exports.getById = async function (req, res, next) {
 		});
 
 		if (!item) {
-			const error = {
-				name: 'DatabaseNotFound',
+			throw {
+				name: 'NotFound',
 				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
 			}
-			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		responseBody = item.get({ plain: true }); // Returns the JSON sent to response
@@ -65,7 +65,15 @@ exports.getById = async function (req, res, next) {
 		resHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET BY ID', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		let httpError = 'INTERNAL_SERVER_ERROR';
+        let errorMessage = '';
+
+        if (err.name === 'NotFound') {
+            httpError = 'NOT_FOUND';
+            errorMessage = err.message;
+        }
+
+        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
 }
 
@@ -149,11 +157,10 @@ exports.update = async function (req, res, next) {
 		});
 
 		if (!item) {
-			const error = {
-				name: 'DatabaseNotFound',
+			throw {
+				name: 'NotFound',
 				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
 			}
-			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		const dataUpdate = {
@@ -208,7 +215,15 @@ exports.update = async function (req, res, next) {
 		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_UPDATED);
 	} catch (err) {
 		debug('UPDATE', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		let httpError = 'INTERNAL_SERVER_ERROR';
+        let errorMessage = '';
+
+        if (err.name === 'NotFound') {
+            httpError = 'NOT_FOUND';
+            errorMessage = err.message;
+        }
+
+        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	};
 }
 
@@ -223,8 +238,8 @@ exports.delete = async function (req, res, next) {
 		});
 
 		if (!find) {
-			const error = {
-				name: 'DatabaseNotFound',
+			throw {
+				name: 'NotFound',
 				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
 			}
 			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
@@ -237,7 +252,15 @@ exports.delete = async function (req, res, next) {
 		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_DELETED);
 	} catch (err) {
 		debug('DELETE', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		let httpError = 'INTERNAL_SERVER_ERROR';
+        let errorMessage = '';
+
+        if (err.name === 'NotFound') {
+            httpError = 'NOT_FOUND';
+            errorMessage = err.message;
+        }
+
+        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
 }
 
@@ -252,8 +275,8 @@ exports.lock = async function (req, res, next) {
 		});
 
 		if (!find) {
-			const error = {
-				name: 'DatabaseNotFound',
+			throw {
+				name: 'NotFound',
 				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
 			}
 			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
@@ -268,6 +291,14 @@ exports.lock = async function (req, res, next) {
 		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
 	} catch (err) {
 		debug('LOCK', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		let httpError = 'INTERNAL_SERVER_ERROR';
+        let errorMessage = '';
+
+        if (err.name === 'NotFound') {
+            httpError = 'NOT_FOUND';
+            errorMessage = err.message;
+        }
+
+        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
 }

@@ -23,11 +23,11 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		verified: {
 			type: DataTypes.BOOLEAN,
-			allowNull: false,
+			//allowNull: false,
 			//defaultValue: false
 		},
 		type: {
-			type: Sequelize.INTEGER, // 1 Email verification, 2 Password recovery
+			type: DataTypes.INTEGER, // 1 Email verification, 2 Password recovery
 			allowNull: false
 		},
 		active: {
@@ -59,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
 			field: 'updated_at'
 		}
 	}, {
-			tableName: 'password_recovery',
+			tableName: 'token',
 			underscored: true
 		});
 

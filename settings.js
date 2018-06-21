@@ -6,17 +6,17 @@ exports.APP = {
 
 exports.JWT = {
     LIFE_TIME: 86400,
-    KEY: 'J8a94JSJjsas8349jASDSDA67'
+    KEY: 'f8a94JSrjshs8e49j5PWsDl67'
 }
 
 exports.DB = {
     DEVELOPMENT: {
         MYSQL: {
             DATABASE: 'dbnodebaseline',
-            HOST: 'localhost',
+            HOST: '192.168.100.2',
             PORT: 3306,
-            USERNAME: 'develop',
-            PASSWORD: 'M1C0ntr4s3n49752',
+            USERNAME: 'root',
+            PASSWORD: 'Bitware2016',
             DIALECT: 'mysql',
             SEEDER_STORAGE: 'sequelize'
         }
@@ -24,10 +24,10 @@ exports.DB = {
     TEST: {
         MYSQL: {
             DATABASE: 'dbnodebaseline',
-            HOST: 'localhost',
+            HOST: '192.168.100.2',
             PORT: 3306,
-            USERNAME: 'develop',
-            PASSWORD: 'M1C0ntr4s3n49752',
+            USERNAME: 'root',
+            PASSWORD: 'Bitware2016',
             DIALECT: 'mysql',
             SEEDER_STORAGE: 'sequelize'
         }
@@ -35,10 +35,10 @@ exports.DB = {
     PRODUCTION: {
         MYSQL: {
             DATABASE: 'dbnodebaseline',
-            HOST: 'localhost',
+            HOST: '192.168.100.2',
             PORT: 3306,
-            USERNAME: 'develop',
-            PASSWORD: 'M1C0ntr4s3n49752',
+            USERNAME: 'root',
+            PASSWORD: 'Bitware2016',
             DIALECT: 'mysql',
             SEEDER_STORAGE: 'sequelize'
         }
