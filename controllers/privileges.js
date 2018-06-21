@@ -1,7 +1,7 @@
 const debug = require('debug')('controllers:privileges');
 const Promise = require('bluebird');
 
-const resHandler = require('../lib/util/http-response-handler');
+const responseHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
 const constants = require('../constants');
 
@@ -24,12 +24,12 @@ exports.get = async function (req, res, next) {
 
 		responseBody = rows;
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK');
+		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		responseHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
-}
+};
 
 exports.getById = async function (req, res, next) {
 	const itemId = req.params.id;
@@ -62,7 +62,7 @@ exports.getById = async function (req, res, next) {
 
 		responseBody = item.get({ plain: true }); // Returns the JSON sent to response
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK');
+		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET BY ID', err);
 		let httpError = 'INTERNAL_SERVER_ERROR';
@@ -73,9 +73,9 @@ exports.getById = async function (req, res, next) {
             errorMessage = err.message;
         }
 
-        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
-}
+};
 
 exports.create = async function (req, res, next) {
 	const body = req.body;
@@ -138,12 +138,12 @@ exports.create = async function (req, res, next) {
 			updatedAt: new Date() 
 		};
 
-		resHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.PRIVILEGE_CREATED);
+		responseHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.PRIVILEGE_CREATED);
 	} catch (err) {
 		debug('CREATE', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		responseHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
-}
+};
 
 exports.update = async function (req, res, next) {
 	const itemId = req.params.id;
@@ -212,7 +212,7 @@ exports.update = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_UPDATED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_UPDATED);
 	} catch (err) {
 		debug('UPDATE', err);
 		let httpError = 'INTERNAL_SERVER_ERROR';
@@ -223,9 +223,9 @@ exports.update = async function (req, res, next) {
             errorMessage = err.message;
         }
 
-        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	};
-}
+};
 
 exports.delete = async function (req, res, next) {
 	const itemId = req.params.id;
@@ -242,14 +242,14 @@ exports.delete = async function (req, res, next) {
 				name: 'NotFound',
 				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
 			}
-			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+			return responseHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		const result = db.Privilege.update({ active: false, visible: false }, {
 			where: { id: itemId }
 		});
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_DELETED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_DELETED);
 	} catch (err) {
 		debug('DELETE', err);
 		let httpError = 'INTERNAL_SERVER_ERROR';
@@ -260,13 +260,13 @@ exports.delete = async function (req, res, next) {
             errorMessage = err.message;
         }
 
-        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
-}
+};
 
 exports.lock = async function (req, res, next) {
 	const itemId = req.params.id;
-	let responseBody = null;
+	let responseBody = {};
 
 	try {
 		const find = await db.Privilege.findOne({
@@ -279,7 +279,7 @@ exports.lock = async function (req, res, next) {
 				name: 'NotFound',
 				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
 			}
-			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+			return responseHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		const result = db.Privilege.update({ active: !find.active }, {
@@ -288,7 +288,11 @@ exports.lock = async function (req, res, next) {
 
 		let constantKey = find.active ? 'PRIVILEGE_LOCKED' : 'PRIVILEGE_UNLOCKED';
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
+		responseBody = {
+			updatedAt: new Date()
+		};
+
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
 	} catch (err) {
 		debug('LOCK', err);
 		let httpError = 'INTERNAL_SERVER_ERROR';
@@ -299,6 +303,6 @@ exports.lock = async function (req, res, next) {
             errorMessage = err.message;
         }
 
-        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
-}
+};

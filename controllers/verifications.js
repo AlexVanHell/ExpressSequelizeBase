@@ -2,7 +2,7 @@ const debug = require('debug')('controllers:verifications');
 const crypto = require('crypto');
 const Promise = require('bluebird');
 
-const resHandler = require('../lib/util/http-response-handler');
+const responseHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
 const constants = require('../constants');
 const settings = require('../settings');
@@ -37,9 +37,13 @@ exports.verifyEmail = async function (req, res, next) {
             };
         }
 
-        if (tokenExpirationLimit <= new Date() - find.createdAt ) {
+        const updateToken = await db.Token.update({ verified: true, active: false }, {
+            where: { id: find.id }
+        });
+
+        if (tokenExpirationLimit <= new Date() - find.createdAt) {
             throw {
-                name: 'SourceExpired',
+                name: 'ResourceExpired',
                 message: constants.STRINGS.TOKEN_EXPIRED
             };
         }
@@ -50,10 +54,6 @@ exports.verifyEmail = async function (req, res, next) {
                 message: constants.STRINGS.USER_NOT_FOUND_BY_TOKEN
             };
         }
-
-        const updateToken = await db.Token.update({ verified: true, active: false }, {
-            where: { id: find.id }
-        });
 
         if (find.person.verified) {
             throw {
@@ -69,32 +69,33 @@ exports.verifyEmail = async function (req, res, next) {
         responseBody = {
             firstName: find.firstName,
             lastName: find.lastName
-        }
+        };
 
-        resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFIED);
+        responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFIED);
     } catch (err) {
         debug('VERIFY EMAIL', err);
 
         let httpError = 'INTERNAL_SERVER_ERROR';
         let errorMessage = '';
-        const errorLabels = ['NotFound', 'Verified', 'SourceExpired'];
+        const errorLabels = ['NotFound', 'Verified', 'ResourceExpired'];
 
         if (err.name && errorLabels.indexOf(err.name) > -1) {
             httpError = err.name !== 'NotFound' ? 'CONFLICT' : 'NOT_FOUND';
             errorMessage = err.message;
         }
 
-        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
     }
-}
+};
 
 exports.sendEmailVerificationToken = async function (req, res, next) {
     const body = req.body;
-    let responseBody = {}
+    const verificationUrl = 'http://' + req.headers.host + '/verification?token=';
+    let responseBody = {};
 
     try {
         const find = await db.Person.findOne({
-            where: { email: req.body.email, visible: true },
+            where: { email: body.email, visible: true },
             attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'verified']
         });
 
@@ -121,9 +122,9 @@ exports.sendEmailVerificationToken = async function (req, res, next) {
             type: 1 // 1: Email verification
         });
 
-        const url = `http://${req.headers.host}/verification?token=${tokenKey}`;
+        const url = verificationUrl + tokenKey;
 
-        const email = await util.emailHandler.sendMail({
+        const mailSent = await util.sendMail({
             to: find.email,
             subject: 'Reenvío de verificación de correo electrónico.',
             body: `
@@ -140,7 +141,11 @@ exports.sendEmailVerificationToken = async function (req, res, next) {
             `
         });
 
-        resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFICATION_SENT + find.email);
+        responseBody = {
+            token: tokenKey
+        };
+
+        responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFICATION_SENT + find.email);
     } catch (err) {
         debug('GET BY ID', err);
 
@@ -153,7 +158,7 @@ exports.sendEmailVerificationToken = async function (req, res, next) {
             errorMessage = err.message;
         }
 
-        resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
     }
-}
+};
 

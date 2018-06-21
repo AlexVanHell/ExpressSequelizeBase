@@ -16,11 +16,11 @@ module.exports = {
 		message: 'Hubo un problema al procesar la petición.'
 	},
 	NO_TOKEN_PROVIDED: {
-		code: 1004,
+		code: 1005,
 		message: 'Acceso denegado. No se proporcionó un token en las cabeceras de la petición.'
 	},
 	INVALID_TOKEN: {
-		code: 1005,
+		code: 1006,
 		message: 'Acceso denegado. El token enviado en las cabeceras de la petición es inválido.'
 	}
 }

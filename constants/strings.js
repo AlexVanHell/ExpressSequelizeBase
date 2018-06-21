@@ -14,6 +14,10 @@ module.exports = {
     LOGIN_FAILED: 'Usuario y/o contraseña incorrectos.',
     USER_DEACTIVATED: 'Tu usuario se encuentra desactivado actualmente, comunicate con un administrador.',
     USER_NOT_VERIFIED: 'No has verifícado tu dirección de correo electrónico.',
+    EMAIL_SENT: 'Se ha enviado un correo electrónico a: ',
+    INCORRECT_PASSWORD: 'La contraseña antigua no es correcta.',
+    SAME_PASSWORD: 'No puedes usar la misma contraseña.',
+    PASSWORD_UPDATED: 'Contraseña actualizada.',
 
     NAME_IN_USE: 'El nombre ya lo tiene otro elemento.',
 
@@ -23,12 +27,12 @@ module.exports = {
     USER_DELETED:  'Usuario eliminado.',
     USER_LOCKED:  'Usuario bloqueado.',
     USER_UNLOCKED:  'Usuario desbloqueado.',
-    USER_NOT_EXISTS:  'El usuario solicitado no existe o ha sido borado.',
+    USER_NOT_EXISTS:  'El usuario no existe o ha sido borado.',
     // Privilege Model Constants
     PRIVILEGE_CREATED: 'Privilegio actualizado.',
     PRIVILEGE_UPDATED: 'Privilegio actualizado.',
     PRIVILEGE_DELETED: 'Privilegio eliminado.',
     PRIVILEGE_LOCKED: 'Privilegio bloqueado.',
     PRIVILEGE_UNLOCKED: 'Privilegio desbloqueado.',
-    PRIVILEGE_NOT_EXISTS:  'El privilegio solicitado no existe o ha sido borado.',
+    PRIVILEGE_NOT_EXISTS:  'El privilegio no existe o ha sido borado.',
 }

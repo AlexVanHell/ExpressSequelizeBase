@@ -6,8 +6,13 @@ const usersRouter = require('./users');
 const privilegesRouter = require('./privileges');
 const verificationsRouter = require('./verifications');
 
+// Login
 router.use('/', loginRouter);
+
+// Users
 router.use('/users', usersRouter);
+
+// Privileges
 router.use('/privileges', privilegesRouter);
 
 // Email verification

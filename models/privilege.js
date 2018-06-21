@@ -15,9 +15,8 @@ module.exports = (sequelize, DataTypes) => {
 					const self = this;
 
 					return Privilege.findOne({ where: { name: value, visible: true } })
-						.then(function (user) {
-							// reject if a different user wants to use the same email
-							if (user && self.id !== user.id) {
+						.then(function (privilege) {
+							if (privilege && self.id !== privilege.id) {
 								throw new Error(constants.STRINGS.NAME_IN_USE);
 							}
 						})

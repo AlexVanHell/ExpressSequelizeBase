@@ -2,7 +2,7 @@ const debug = require('debug')('controllers:users');
 const crypto = require('crypto');
 const Promise = require('bluebird');
 
-const resHandler = require('../lib/util/http-response-handler');
+const responseHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
 const constants = require('../constants');
 const settings = require('../settings');
@@ -32,12 +32,12 @@ exports.get = async function (req, res, next) {
 
 		responseBody = rows;
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK');
+		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		responseHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
-}
+};
 
 exports.getById = async function (req, res, next) {
 	const itemId = req.params.id;
@@ -95,7 +95,7 @@ exports.getById = async function (req, res, next) {
 			delete responseBody.privilege.accesses;
 		}
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK');
+		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET BY ID', err);
 		let httpError = 'INTERNAL_SERVER_ERROR';
@@ -106,12 +106,13 @@ exports.getById = async function (req, res, next) {
 			errorMessage = err.message;
 		}
 
-		resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
-}
+};
 
 exports.create = async function (req, res, next) {
 	const body = req.body;
+	const verificationUrl = 'http://' + req.headers.host + '/verification?token=';
 	let responseBody = {};
 	let usernameUpdated = false;
 	let item = {};
@@ -196,13 +197,13 @@ exports.create = async function (req, res, next) {
 			type: 1 // 1: Email verification
 		});
 
-		const url = `http://${req.headers.host}/verification?token=${tokenKey}`;
+		const url = verificationUrl + tokenKey;
 
-		const email = await util.emailHandler.sendMail({
+		const mailSent = await util.sendMail({
 			to: body.email,
 			subject: 'Registro exitoso en la plataforma',
 			body: `
-				<h1>Bienvenido a ${settings.APP.NAME} ${body.firstName} ${body.lastName}!</h1>
+				<h1>¡Bienvenido a ${settings.APP.NAME} ${body.firstName} ${body.lastName}!</h1>
 				<p>
 					Haz click sobre el siguiente enlace para activar tu cuenta:
 					<br>
@@ -222,12 +223,12 @@ exports.create = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		resHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.USER_CREATED + item.email);
+		responseHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.USER_CREATED + item.email);
 	} catch (err) {
 		debug('CREATE', err);
-		resHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		responseHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
 	}
-}
+};
 
 exports.update = async function (req, res, next) {
 	const itemId = req.params.id;
@@ -298,7 +299,7 @@ exports.update = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_UPDATED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_UPDATED);
 	} catch (err) {
 		debug('UPDATE', err);
 		let httpError = 'INTERNAL_SERVER_ERROR';
@@ -309,9 +310,9 @@ exports.update = async function (req, res, next) {
 			errorMessage = err.message;
 		}
 
-		resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	};
-}
+};
 
 exports.delete = async function (req, res, next) {
 	const itemId = req.params.id;
@@ -328,14 +329,14 @@ exports.delete = async function (req, res, next) {
 				name: 'NotFound',
 				message: constants.STRINGS.USER_NOT_EXISTS
 			}
-			return resHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
+			return responseHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		const updateResult = db.Person.update({ active: false, visible: false }, {
 			where: { id: itemId }
 		});
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_DELETED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_DELETED);
 	} catch (err) {
 		debug('DELETE', err);
 		let httpError = 'INTERNAL_SERVER_ERROR';
@@ -346,13 +347,13 @@ exports.delete = async function (req, res, next) {
 			errorMessage = err.message;
 		}
 
-		resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
-}
+};
 
 exports.lock = async function (req, res, next) {
 	const itemId = req.params.id;
-	let responseBody = null;
+	let responseBody = {};
 
 	try {
 		const find = await db.Person.findOne({
@@ -373,7 +374,11 @@ exports.lock = async function (req, res, next) {
 
 		let constantKey = find.active ? 'USER_LOCKED' : 'USER_UNLOCKED';
 
-		resHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
+		responseBody = {
+			updatedAt: new Date()
+		};
+
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
 	} catch (err) {
 		debug('LOCK', err);
 		let httpError = 'INTERNAL_SERVER_ERROR';
@@ -384,6 +389,6 @@ exports.lock = async function (req, res, next) {
 			errorMessage = err.message;
 		}
 
-		resHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
-}
+};
