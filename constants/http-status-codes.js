@@ -22,7 +22,7 @@ module.exports = {
 		}, 
 		UNPROCESSABLE_ENTITY: {
 			code: 422,
-			message: 'La petición no puede ser procesada debido a un conflicto con el recurso.'
+			message: 'La solicitud está bien formada pero fue imposible seguirla debido a errores semánticos.'
 		},
 		INTERNAL_SERVER_ERROR: {
 			code: 500,

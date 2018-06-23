@@ -1,5 +1,7 @@
+const envs = require('./environments');
 const env = process.env.NODE_ENV || 'development';
-const environment = require('./environments')[env];
+const environment = envs[env];
+
 
 // Production Mode
 exports.PRODUCTION = environment.PRODUCTION;

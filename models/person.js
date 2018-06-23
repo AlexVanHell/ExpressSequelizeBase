@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
 							}
 						})
 						.catch(function (err) {
-							return next(err);
+							throw err;
 						});
 				}
 			}
@@ -59,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
 							}
 						})
 						.catch(function (err) {
-							return next(err);
+							throw err;
 						});
 				}
 			}

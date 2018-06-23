@@ -15,12 +15,16 @@ module.exports = {
 		code: 1004,
 		message: 'Hubo un problema al procesar la petición.'
 	},
-	NO_TOKEN_PROVIDED: {
+	UNPROCESSABLE_ENTITY: {
 		code: 1005,
+		message: 'La solicitud está bien formada pero fue imposible seguirla debido a errores semánticos.'
+	},
+	NO_TOKEN_PROVIDED: {
+		code: 2001,
 		message: 'Acceso denegado. No se proporcionó un token en las cabeceras de la petición.'
 	},
 	INVALID_TOKEN: {
-		code: 1006,
+		code: 2002,
 		message: 'Acceso denegado. El token enviado en las cabeceras de la petición es inválido.'
 	}
 }

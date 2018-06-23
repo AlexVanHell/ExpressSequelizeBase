@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 
 const controller = require('../../controllers/login');
+const validations = require('../../lib/request-validations');
 
-router.post('/login', controller.login);
+router.post('/login', validations.validate('login'), controller.login);
 
 router.route('/recovery')
 	.get(controller.verifyRecovery)

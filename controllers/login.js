@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const Promise = require('bluebird');
 
 const responseHandler = require('../lib/util/http-response-handler');
+const auth = require('../lib/auth');
 const util = require('../lib/util');
 const constants = require('../constants');
 const settings = require('../settings');
@@ -74,14 +75,19 @@ exports.login = async function (req, res, next) {
 		}
 
 		// This line removes the password from response
-		responseBody = JSON.parse(JSON.stringify(find));
+		const user = JSON.parse(JSON.stringify(find));
 
 		// If user has privilege set accesses from privilege
-		if (responseBody.privilege) {
-			responseBody.accesses = Object.assign([], responseBody.privilege.accesses); // Avoid point to the same memory direction to delete below
+		if (user.privilege) {
+			user.accesses = Object.assign([], user.privilege.accesses); // Avoid point to the same memory direction to delete below
 
-			delete responseBody.privilege.accesses;
+			delete user.privilege.accesses;
 		}
+
+		responseBody = {
+			user: JSON.parse(JSON.stringify(find)),
+			token: await auth.create(user)
+		};
 
 		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.LOGIN_SUCCESS);
 	} catch (err) {
