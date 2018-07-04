@@ -3,7 +3,7 @@ const debug = require('debug')('base-line:settings');
 const envs = require('./environments');
 const env = envs[process.env.NODE_ENV || 'development'];
 
-debug('Using env:', env.NAME || 'no-name');
+debug('Using environment "' + (env.NAME || 'no-name') + '"');
 
 // Production Mode
 exports.PRODUCTION = env.PRODUCTION;
