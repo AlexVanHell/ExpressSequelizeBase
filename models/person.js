@@ -30,14 +30,13 @@ module.exports = (sequelize, DataTypes) => {
 				isUnique: function (value) {
 					var self = this;
 
-					Person.findOne({ where: { username: value } })
+					return Person.findOne({ where: { username: value } })
 						.then(function (user) {
 							// reject if a different user wants to use the same username
 							if (user && self.id !== user.id) {
-								throw new Error(constants.STRINGS.USERNAME_IN_USE);
+								throw { name: 'USERNAME_IN_USE', params: { username: user.username } };
 							}
-						})
-						.catch(function (err) {
+						}).catch(function (err) {
 							throw err;
 						});
 				}
@@ -47,18 +46,19 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.STRING({ length: 100 }),
 			allowNull: false,
 			validate: {
-				isEmail: true,
-				isUnique (value) {
+				isEmail: {
+					msg: 'MUST_BE_EMAIL'
+				},
+				isUnique(value) {
 					const self = this;
 
 					return Person.findOne({ where: { email: value, visible: true } })
 						.then(function (user) {
 							// reject if a different user wants to use the same email
 							if (user && self.id !== user.id) {
-								throw new Error(constants.STRINGS.EMAIL_IN_USE);
+								throw { name: 'EMAIL_IN_USE', params: { email: user.email } };
 							}
-						})
-						.catch(function (err) {
+						}).catch(function (err) {
 							throw err;
 						});
 				}
@@ -135,9 +135,9 @@ module.exports = (sequelize, DataTypes) => {
 	};
 
 	// Hooks
-	Person.beforeCreate(function(user, options) {
+	Person.beforeCreate(function (user, options) {
 		return Person.generateHash(user.password)
-			.then(function(hasedPassword) {
+			.then(function (hasedPassword) {
 				user.password = hasedPassword;
 			});
 	});
@@ -178,9 +178,9 @@ module.exports = (sequelize, DataTypes) => {
 	Person.prototype.validPassword = function (password) {
 		return Promise.promisify(bcrypt.compare)(password, this.password);
 	};
-	Person.prototype.ownsEmail = function(email) {
+	Person.prototype.ownsEmail = function (email) {
 		return this.email === email;
-	}
+	};
 	Person.prototype.toJSON = function () {
 		var values = Object.assign({}, this.get());
 

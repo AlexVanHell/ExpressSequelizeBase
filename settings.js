@@ -1,19 +1,24 @@
+'use strict';
+const debug = require('debug')('base-line:settings');
 const envs = require('./environments');
-const env = process.env.NODE_ENV || 'development';
-const environment = envs[env];
+const env = envs[process.env.NODE_ENV || 'development'];
 
+debug('Using env:', env.NAME || 'no-name');
 
 // Production Mode
-exports.PRODUCTION = environment.PRODUCTION;
+exports.PRODUCTION = env.PRODUCTION;
 
 // App Info
-exports.APP = environment.APP;
+exports.APP = env.APP;
+
+// Host Variables
+exports.HOST = env.HOST;
 
 // JSON Web Token Settings
-exports.JWT = environment.JWT;
+exports.JWT = env.JWT;
 
 // Databases Settings
-exports.DB = environment.DB;
+exports.DB = env.DB;
 
-// Email settings
-exports.MAIL_CONFIG = environment.MAIL_CONFIG;
+// Email Settings
+exports.MAIL_CONFIG = env.MAIL_CONFIG;

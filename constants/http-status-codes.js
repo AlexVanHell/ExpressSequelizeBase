@@ -33,7 +33,7 @@ module.exports = {
 	SUCCESS: {
 		OK: {
 			code: 200,
-			message: 'Petición exitosa.'
+			message: 'Operación exitosa.'
 		},
 		CREATED: {
 			code: 201,

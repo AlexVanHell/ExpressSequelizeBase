@@ -4,15 +4,15 @@
 	"private": true,
 	"main": "./bin/www",
 	"config": {
-		"env": "test"
+		"env": "production"
 	},
 	"scripts": {
 		"start": "node ./bin/www",
 		"apidoc": "apidoc -e \"(node_modules|public)\" -o public/apidoc",
-		"dev": "nodemon ./bin/www",
+		"demon": "nodemon ./bin/www",
 		"debug": "set DEBUG=base-line:*,sockets:*,controllers:*,util:* && nodemon --inspect ./bin/www",
 		"debug-linux": "DEBUG=base-line:*,sockets:*,controllers:*,util:* nodemon --inspect ./bin/www",
-		"start-env": "set NODE_ENV=%npm_package_config_env% && node ./bin/www"
+		"prod": "NODE_ENV=production node ./bin/www"
 	},
 	"dependencies": {
 		"apidoc": "^0.17.6",

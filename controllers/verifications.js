@@ -1,20 +1,17 @@
 const debug = require('debug')('controllers:verifications');
 const crypto = require('crypto');
 const Promise = require('bluebird');
+const settings = require('../settings');
 
 const responseHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
-const constants = require('../constants');
-const settings = require('../settings');
-const auth = require('../lib/auth');
-
 const db = require('../models');
 
 const tokenExpirationLimit = 6 * 60 * 60 * 1000; // 6hrs
 
 exports.verifyEmail = async function (req, res, next) {
     const token = req.query.token;
-    const loginUrl = 'http://' + req.headers.host + '/login';
+    const loginUrl = settings.HOST.FRONTEND + 'login';
     let responseBody = {};
 
     try {
@@ -33,7 +30,7 @@ exports.verifyEmail = async function (req, res, next) {
         if (!find) {
             throw {
                 name: 'NotFound',
-                message: constants.STRINGS.INVALID_VERIFICATION_TOKEN
+                message: 'INVALID_VERIFICATION_TOKEN'
             };
         }
 
@@ -44,21 +41,21 @@ exports.verifyEmail = async function (req, res, next) {
         if (tokenExpirationLimit <= new Date() - find.createdAt) {
             throw {
                 name: 'ResourceExpired',
-                message: constants.STRINGS.TOKEN_EXPIRED
+                message: 'TOKEN_EXPIRED'
             };
         }
 
         if (!find.person) {
             throw {
                 name: 'NotFound',
-                message: constants.STRINGS.USER_NOT_FOUND_BY_TOKEN
+                message: 'USER_NOT_FOUND_BY_TOKEN'
             };
         }
 
         if (find.person.verified) {
             throw {
                 name: 'Verified',
-                message: constants.STRINGS.EMAIL_ALREADY_VERIFIED
+                message: 'EMAIL_ALREADY_VERIFIED'
             };
         }
 
@@ -71,16 +68,15 @@ exports.verifyEmail = async function (req, res, next) {
             lastName: find.lastName
         };
 
-        responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFIED);
+        responseHandler.handleSuccess(req, res, responseBody, 'OK', 'EMAIL_VERIFIED');
     } catch (err) {
         debug('VERIFY EMAIL', err);
-
+        const errorLabels = ['Verified', 'ResourceExpired'];
         let httpError = 'INTERNAL_SERVER_ERROR';
         let errorMessage = '';
-        const errorLabels = ['NotFound', 'Verified', 'ResourceExpired'];
 
         if (err.name && errorLabels.indexOf(err.name) > -1) {
-            httpError = err.name !== 'NotFound' ? 'CONFLICT' : 'NOT_FOUND';
+            httpError = 'CONFLICT';
             errorMessage = err.message;
         }
 
@@ -90,7 +86,7 @@ exports.verifyEmail = async function (req, res, next) {
 
 exports.sendEmailVerificationToken = async function (req, res, next) {
     const body = req.body;
-    const verificationUrl = 'http://' + req.headers.host + '/verification?token=';
+    const verificationUrl = settings.HOST.FRONTEND + 'verification?token=';
     let responseBody = {};
 
     try {
@@ -102,14 +98,14 @@ exports.sendEmailVerificationToken = async function (req, res, next) {
         if (!find) {
             throw {
                 name: 'NotFound',
-                message: constants.STRINGS.EMAIL_NOT_EXISTS
+                message: 'EMAIL_NOT_EXISTS'
             }
         }
 
         if (find.verified) {
             throw {
                 name: 'EmailAlreadyVerified',
-                message: constants.STRINGS.EMAIL_ALREADY_VERIFIED
+                message: 'EMAIL_ALREADY_VERIFIED'
             }
         }
 
@@ -145,16 +141,14 @@ exports.sendEmailVerificationToken = async function (req, res, next) {
             token: tokenKey
         };
 
-        responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFICATION_SENT + find.email);
+        responseHandler.handleSuccess(req, res, responseBody, 'OK', 'EMAIL_VERIFICATION_SENT', { email: find.email });
     } catch (err) {
         debug('GET BY ID', err);
-
         let httpError = 'INTERNAL_SERVER_ERROR';
         let errorMessage = '';
-        const errorLabels = ['NotFound', 'EmailAlreadyVerified'];
 
-        if (err.name && errorLabels.indexOf(err.name) > -1) {
-            httpError = err.name === 'EmailAlreadyVerified' ? 'CONFLICT' : 'NOT_FOUND';
+        if (err.name === 'EmailAlreadyVerified') {
+            httpError = 'CONFLICT';
             errorMessage = err.message;
         }
 

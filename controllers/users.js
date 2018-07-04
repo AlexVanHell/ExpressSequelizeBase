@@ -1,12 +1,11 @@
+'use strict';
 const debug = require('debug')('controllers:users');
 const crypto = require('crypto');
 const Promise = require('bluebird');
+const settings = require('../settings');
 
 const responseHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
-const constants = require('../constants');
-const settings = require('../settings');
-
 const db = require('../models');
 // Models
 /* 
@@ -17,11 +16,14 @@ const Privilege = db.Privilege;
 */
 
 exports.get = async function (req, res, next) {
-	let responseBody = {};
+	const pagination = util.pagination(req.query.limit, req.query.offset);
+	let responseBody = [];
 
 	try {
 		const rows = await db.Person.findAll({
 			where: { visible: true },
+			limit: pagination.limit,
+			offset: pagination.offset,
 			attributes: ['id', 'firstName', 'lastName', 'username', 'email', 'phone', 'active', 'createdAt', 'updatedAt'],
 			include: [{
 				model: db.Privilege,
@@ -35,7 +37,7 @@ exports.get = async function (req, res, next) {
 		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET', err);
-		responseHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		responseHandler.handleError(req, res, err);
 	}
 };
 
@@ -82,7 +84,7 @@ exports.getById = async function (req, res, next) {
 		if (!item) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.USER_NOT_EXISTS
+				message: 'USER_NOT_EXISTS'
 			}
 		}
 
@@ -98,27 +100,19 @@ exports.getById = async function (req, res, next) {
 		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET BY ID', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
-		let errorMessage = '';
-
-		if (err.name === 'NotFound') {
-			httpError = 'NOT_FOUND';
-			errorMessage = err.message;
-		}
-
-		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err);
 	}
 };
 
 exports.create = async function (req, res, next) {
 	const body = req.body;
-	const verificationUrl = 'http://' + req.headers.host + '/verification?token=';
+	const verificationUrl = settings.HOST.FRONTEND + 'verification?token=';
 	let responseBody = {};
 	let usernameUpdated = false;
 	let item = {};
 
 	try {
-		let randomPassword = util.randomString(12);
+		const randomPassword = util.randomString(12);
 
 		// Find if email is already registered but is not visible
 		let find = await db.Person.findOne({
@@ -151,7 +145,7 @@ exports.create = async function (req, res, next) {
 				usernameUpdated = true;
 			}
 
-			const updateResult = await db.Person.update(dataInsert, { where: { email: body.email } });
+			const updateResult = await db.Person.update(dataInsert, { where: { id: find.id } });
 
 			item = find;
 		} else {
@@ -171,6 +165,7 @@ exports.create = async function (req, res, next) {
 					where: { personId: item.id }
 				});
 
+			// Generate an array of promises tu update or create access(es)
 			const accessesArr = body.accesses.map(async function (x) {
 				const hasAccess = await item.hasAccess(x.id);
 
@@ -206,12 +201,13 @@ exports.create = async function (req, res, next) {
 				<h1>¡Bienvenido a ${settings.APP.NAME} ${body.firstName} ${body.lastName}!</h1>
 				<p>
 					Haz click sobre el siguiente enlace para activar tu cuenta:
-					<br>
-					<b>
-						<a href="${url}">
-							${url}
-						</a>
-					</b>
+					<br />
+					<b><a href="${url}">${url}</a></b>
+				</p>
+				<p>
+					Te hemos asignado una contraseña temporal:
+					<br />
+					${randomPassword}
 				</p>
 			`
 		});
@@ -223,10 +219,10 @@ exports.create = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.USER_CREATED + item.email);
+		responseHandler.handleSuccess(req, res, responseBody, 'CREATED', 'USER_CREATED', { email: item.email });
 	} catch (err) {
 		debug('CREATE', err);
-		responseHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		responseHandler.handleError(req, res, err);
 	}
 };
 
@@ -244,7 +240,7 @@ exports.update = async function (req, res, next) {
 		if (!item) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.USER_NOT_EXISTS
+				message: 'USER_NOT_EXISTS'
 			}
 		}
 
@@ -299,18 +295,10 @@ exports.update = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_UPDATED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'USER_UPDATED');
 	} catch (err) {
 		debug('UPDATE', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
-		let errorMessage = '';
-
-		if (err.name === 'NotFound') {
-			httpError = 'NOT_FOUND';
-			errorMessage = err.message;
-		}
-
-		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err);
 	};
 };
 
@@ -327,27 +315,18 @@ exports.delete = async function (req, res, next) {
 		if (!find) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.USER_NOT_EXISTS
+				message: 'USER_NOT_EXISTS'
 			}
-			return responseHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		const updateResult = db.Person.update({ active: false, visible: false }, {
 			where: { id: itemId }
 		});
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.USER_DELETED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'USER_DELETED');
 	} catch (err) {
 		debug('DELETE', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
-		let errorMessage = '';
-
-		if (err.name === 'NotFound') {
-			httpError = 'NOT_FOUND';
-			errorMessage = err.message;
-		}
-
-		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err);
 	}
 };
 
@@ -364,7 +343,7 @@ exports.lock = async function (req, res, next) {
 		if (!find) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.USER_NOT_EXISTS
+				message: 'USER_NOT_EXISTS'
 			}
 		}
 
@@ -372,23 +351,15 @@ exports.lock = async function (req, res, next) {
 			where: { id: itemId }
 		});
 
-		let constantKey = find.active ? 'USER_LOCKED' : 'USER_UNLOCKED';
+		let messageKey = find.active ? 'USER_LOCKED' : 'USER_UNLOCKED';
 
 		responseBody = {
 			updatedAt: new Date()
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', messageKey);
 	} catch (err) {
 		debug('LOCK', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
-		let errorMessage = '';
-
-		if (err.name === 'NotFound') {
-			httpError = 'NOT_FOUND';
-			errorMessage = err.message;
-		}
-
-		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err);
 	}
 };

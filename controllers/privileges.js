@@ -1,10 +1,9 @@
 const debug = require('debug')('controllers:privileges');
 const Promise = require('bluebird');
+const settings = require('../settings');
 
 const responseHandler = require('../lib/util/http-response-handler');
 const util = require('../lib/util');
-const constants = require('../constants');
-
 const db = require('../models');
 // Models
 /* 
@@ -14,11 +13,14 @@ const PrivilegeAccess = db.PrivilegeAccess;
 */
 
 exports.get = async function (req, res, next) {
-	let responseBody = {};
+	const pagination = util.pagination(req.query.limit, req.query.offset);
+	let responseBody = [];
 
 	try {
 		const rows = await db.Privilege.findAll({
 			where: { visible: true },
+			limit: pagination.limit,
+			offset: pagination.offset,
 			attributes: ['id', 'name', 'description', 'active', 'createdAt', 'updatedAt'],
 		});
 
@@ -27,7 +29,7 @@ exports.get = async function (req, res, next) {
 		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET', err);
-		responseHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		responseHandler.handleError(req, res, err);
 	}
 };
 
@@ -56,7 +58,7 @@ exports.getById = async function (req, res, next) {
 		if (!item) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
+				message: 'PRIVILEGE_NOT_EXISTS'
 			}
 		}
 
@@ -65,15 +67,7 @@ exports.getById = async function (req, res, next) {
 		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
 		debug('GET BY ID', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
-        let errorMessage = '';
-
-        if (err.name === 'NotFound') {
-            httpError = 'NOT_FOUND';
-            errorMessage = err.message;
-        }
-
-        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err);
 	}
 };
 
@@ -100,7 +94,7 @@ exports.create = async function (req, res, next) {
 			dataInsert.visible = true;
 			dataInsert.createdAt = new Date();
 
-			const result = await db.Privilege.update(dataInsert, { where: { email: body.email } });
+			const result = await db.Privilege.update(dataInsert, { where: { id: find.id } });
 
 			item = find;
 		} else {
@@ -116,6 +110,7 @@ exports.create = async function (req, res, next) {
 				where: { privilegeId: item.id }
 			});
 
+		// Generate an array of promises tu update or create access(es)
 		const accessesArr = body.accesses.map(async function (x) {
 			const hasAccess = await item.hasAccess(x.id);
 
@@ -132,16 +127,16 @@ exports.create = async function (req, res, next) {
 
 		const updateAccesses = await Promise.all(accessesArr);
 
-		responseBody = { 
-			id: item.id, 
-			createdAt: new Date(), 
-			updatedAt: new Date() 
+		responseBody = {
+			id: item.id,
+			createdAt: new Date(),
+			updatedAt: new Date()
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'CREATED', constants.STRINGS.PRIVILEGE_CREATED);
+		responseHandler.handleSuccess(req, res, responseBody, 'CREATED', 'PRIVILEGE_CREATED');
 	} catch (err) {
 		debug('CREATE', err);
-		responseHandler.handleError(req, res, err, 'INTERNAL_SERVER_ERROR', 'INTERNAL_SERVER_ERROR');
+		responseHandler.handleError(req, res, err);
 	}
 };
 
@@ -159,7 +154,7 @@ exports.update = async function (req, res, next) {
 		if (!item) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
+				message: 'PRIVILEGE_NOT_EXISTS'
 			}
 		}
 
@@ -212,18 +207,10 @@ exports.update = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_UPDATED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'PRIVILEGE_UPDATED');
 	} catch (err) {
 		debug('UPDATE', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
-        let errorMessage = '';
-
-        if (err.name === 'NotFound') {
-            httpError = 'NOT_FOUND';
-            errorMessage = err.message;
-        }
-
-        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err);
 	};
 };
 
@@ -240,27 +227,18 @@ exports.delete = async function (req, res, next) {
 		if (!find) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
+				message: 'PRIVILEGE_NOT_EXISTS'
 			}
-			return responseHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		const result = db.Privilege.update({ active: false, visible: false }, {
 			where: { id: itemId }
 		});
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PRIVILEGE_DELETED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'PRIVILEGE_DELETED');
 	} catch (err) {
 		debug('DELETE', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
-        let errorMessage = '';
-
-        if (err.name === 'NotFound') {
-            httpError = 'NOT_FOUND';
-            errorMessage = err.message;
-        }
-
-        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err);
 	}
 };
 
@@ -277,32 +255,23 @@ exports.lock = async function (req, res, next) {
 		if (!find) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.PRIVILEGE_NOT_EXISTS
+				message: 'PRIVILEGE_NOT_EXISTS'
 			}
-			return responseHandler.handleError(req, res, error, 'NOT_FOUND', 'NOT_FOUND', error.message);
 		}
 
 		const result = db.Privilege.update({ active: !find.active }, {
 			where: { id: itemId }
 		});
 
-		let constantKey = find.active ? 'PRIVILEGE_LOCKED' : 'PRIVILEGE_UNLOCKED';
+		let messageKey = find.active ? 'PRIVILEGE_LOCKED' : 'PRIVILEGE_UNLOCKED';
 
 		responseBody = {
 			updatedAt: new Date()
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS[constantKey]);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', messageKey);
 	} catch (err) {
 		debug('LOCK', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
-        let errorMessage = '';
-
-        if (err.name === 'NotFound') {
-            httpError = 'NOT_FOUND';
-            errorMessage = err.message;
-        }
-
-        responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
+		responseHandler.handleError(req, res, err);
 	}
 };

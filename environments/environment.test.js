@@ -1,9 +1,18 @@
+exports.NAME = 'test';
+
 exports.PRODUCTION = false;
 
 exports.APP = {
     NAME: 'BaseLine',
     VERSION: '1.0.0',
-    DESCRIPTION: 'BaseLine description'
+    DESCRIPTION: 'BaseLine description',
+    DEFAULT_LANG: 'en'
+};
+
+exports.HOST = {
+    FRONTEND: 'http://localhost:4200/',
+    PUBLIC: 'http://localhost:3000/',
+    MEDIA: 'http://localhost:3000/media/',
 };
 
 exports.JWT = {
@@ -12,15 +21,15 @@ exports.JWT = {
 }
 
 exports.DB = {
-	MYSQL: {
-		DATABASE: 'dbnodebaseline',
-		HOST: '192.168.100.2',
-		PORT: 3306,
-		USERNAME: 'root',
-		PASSWORD: 'Bitware2016',
-		DIALECT: 'mysql',
-		SEEDER_STORAGE: 'sequelize'
-	}
+    MYSQL: {
+        DATABASE: 'dbnodebaseline',
+        HOST: '192.168.100.2',
+        PORT: 3306,
+        USERNAME: 'root',
+        PASSWORD: 'Bitware2016',
+        DIALECT: 'mysql',
+        SEEDER_STORAGE: 'sequelize'
+    }
 };
 
 exports.MAIL_CONFIG = {

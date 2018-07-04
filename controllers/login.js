@@ -1,13 +1,11 @@
 const debug = require('debug')('controllers:users');
 const crypto = require('crypto');
 const Promise = require('bluebird');
+const settings = require('../settings');
 
 const responseHandler = require('../lib/util/http-response-handler');
 const auth = require('../lib/auth');
 const util = require('../lib/util');
-const constants = require('../constants');
-const settings = require('../settings');
-
 const db = require('../models');
 const Op = require('sequelize').Op;
 
@@ -56,21 +54,21 @@ exports.login = async function (req, res, next) {
 		if (!find || !await find.validPassword(body.password)) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.LOGIN_FAILED
+				message: 'LOGIN_FAILED'
 			}
 		}
 
 		if (!find.verified) {
 			throw {
 				name: 'NotVerified',
-				message: constants.STRINGS.USER_NOT_VERIFIED
+				message: 'USER_NOT_VERIFIED'
 			}
 		}
 
 		if (!find.active) {
 			throw {
 				name: 'ResourceDeactivated',
-				message: constants.STRINGS.USER_DEACTIVATED
+				message: 'USER_DEACTIVATED'
 			}
 		}
 
@@ -89,20 +87,15 @@ exports.login = async function (req, res, next) {
 			token: await auth.create(user)
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.LOGIN_SUCCESS);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'LOGIN_SUCCESS');
 	} catch (err) {
 		debug('LOGIN', err);
-		const errorLabels = ['NotFound', 'ResourceDeactivated', 'NotVerified'];
-		let httpError = 'INTERNAL_SERVER_ERROR';
+		const errorLabels = ['ResourceDeactivated', 'NotVerified'];
+		let httpError = '';
 		let errorMessage = '';
 
 		if (err.name && errorLabels.indexOf(err.name) > -1) {
-			if (err.name === 'NotFound') {
-				httpError = 'NOT_FOUND';
-			} else {
-				httpError = 'CONFLICT';
-			}
-
+			httpError = 'CONFLICT';
 			errorMessage = err.message;
 		}
 
@@ -112,7 +105,7 @@ exports.login = async function (req, res, next) {
 
 exports.recovery = async function (req, res, next) {
 	const body = req.body;
-	const recoveryUrl = 'http://' + req.headers.host + '/recovery?token=';
+	const recoveryUrl = settings.HOST.FRONTEND + 'recovery?token=';
 	let responseBody = {};
 
 	try {
@@ -133,14 +126,14 @@ exports.recovery = async function (req, res, next) {
 		if (!find) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.EMAIL_NOT_EXISTS
+				message: 'EMAIL_NOT_EXISTS'
 			}
 		}
 
 		if (!find.verified) {
 			throw {
 				name: 'NotVerified',
-				message: constants.STRINGS.USER_NOT_VERIFIED
+				message: 'USER_NOT_VERIFIED'
 			}
 		}
 
@@ -169,20 +162,14 @@ exports.recovery = async function (req, res, next) {
 			lastName: find.lastName
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_SENT + find.email);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'EMAIL_SENT', { email: find.email });
 	} catch (err) {
 		debug('RECOVERY', err);
-		const errorLabels = ['NotFound', 'NotVerified'];
-		let httpError = 'INTERNAL_SERVER_ERROR';
+		let httpError = '';
 		let errorMessage = '';
 
-		if (err.name && errorLabels.indexOf(err.name) > -1) {
-			if (err.name === 'NotFound') {
-				httpError = 'NOT_FOUND';
-			} else {
-				httpError = 'CONFLICT';
-			}
-
+		if (err.name === 'NotVerified') {
+			httpError = 'CONFLICT';
 			errorMessage = err.message;
 		}
 
@@ -192,7 +179,7 @@ exports.recovery = async function (req, res, next) {
 
 exports.verifyRecovery = async function (req, res, next) {
 	const token = req.query.token;
-	const loginUrl = 'http://' + req.headers.host + '/login';
+	const loginUrl = settings.HOST.FRONTEND + 'login';
 	let responseBody = {};
 
 	try {
@@ -211,7 +198,7 @@ exports.verifyRecovery = async function (req, res, next) {
 		if (!find) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.INVALID_VERIFICATION_TOKEN
+				message: 'INVALID_VERIFICATION_TOKEN'
 			};
 		}
 
@@ -222,21 +209,21 @@ exports.verifyRecovery = async function (req, res, next) {
 		if (tokenExpirationLimit <= new Date() - find.createdAt) {
 			throw {
 				name: 'ResourceExpired',
-				message: constants.STRINGS.TOKEN_EXPIRED
+				message: 'TOKEN_EXPIRED'
 			};
 		}
 
 		if (!find.person) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.USER_NOT_FOUND_BY_TOKEN
+				message: 'USER_NOT_FOUND_BY_TOKEN'
 			};
 		}
 
 		if (!find.person.verified) {
 			throw {
 				name: 'NotVerified',
-				message: constants.STRINGS.USER_NOT_VERIFIED
+				message: 'USER_NOT_VERIFIED'
 			}
 		}
 
@@ -249,15 +236,15 @@ exports.verifyRecovery = async function (req, res, next) {
 			lastName: find.lastName
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.EMAIL_VERIFIED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'EMAIL_VERIFIED');
 	} catch (err) {
 		debug('VERIFY EMAIL', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
+		const errorNames = ['NotVerified', 'ResourceExpired'];
+		let httpError = '';
 		let errorMessage = '';
-		const errorLabels = ['NotFound', 'NotVerified', 'ResourceExpired'];
 
-		if (err.name && errorLabels.indexOf(err.name) > -1) {
-			httpError = err.name !== 'NotFound' ? 'CONFLICT' : 'NOT_FOUND';
+		if (err.name && errorNames.indexOf(err.name) > -1) {
+			httpError = 'CONFLICT';
 			errorMessage = err.message;
 		}
 
@@ -284,14 +271,14 @@ exports.restore = async function (req, res, next) {
 		if (!find) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.INVALID_VERIFICATION_TOKEN
+				message: 'INVALID_VERIFICATION_TOKEN'
 			};
 		}
 
 		if (await find.person.validPassword(body.password.new)) {
 			throw {
 				name: 'InvalidValue',
-				message: constants.STRINGS.SAME_PASSWORD
+				message: 'SAME_PASSWORD'
 			}
 		}
 
@@ -309,15 +296,15 @@ exports.restore = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PASSWORD_UPDATED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'PASSWORD_UPDATED');
 	} catch (err) {
 		debug('RESTORE', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
+		const errorLabels = ['NotVerified', 'InvalidValue'];
+		let httpError = '';
 		let errorMessage = '';
-		const errorLabels = ['NotFound', 'NotVerified', 'InvalidValue'];
 
 		if (err.name && errorLabels.indexOf(err.name) > -1) {
-			httpError = err.name !== 'NotFound' ? 'CONFLICT' : 'NOT_FOUND';
+			httpError = 'CONFLICT';
 			errorMessage = err.message;
 		}
 
@@ -341,28 +328,28 @@ exports.update = async function (req, res, next) {
 		if (!find) {
 			throw {
 				name: 'NotFound',
-				message: constants.STRINGS.USER_NOT_EXISTS
+				message: 'USER_NOT_EXISTS'
 			}
 		}
 
 		if (!find.verified) {
 			throw {
 				name: 'NotVerified',
-				message: constants.STRINGS.USER_NOT_VERIFIED
+				message: 'USER_NOT_VERIFIED'
 			}
 		}
 
 		if (!await find.validPassword(body.password.old)) {
 			throw {
 				name: 'InvalidValue',
-				message: constants.STRINGS.INCORRECT_PASSWORD
+				message: 'INCORRECT_PASSWORD'
 			}
 		}
 
 		if (await find.validPassword(body.password.new)) {
 			throw {
 				name: 'InvalidValue',
-				message: constants.STRINGS.SAME_PASSWORD
+				message: 'SAME_PASSWORD'
 			}
 		}
 
@@ -370,15 +357,15 @@ exports.update = async function (req, res, next) {
 			updatedAt: new Date()
 		};
 
-		responseHandler.handleSuccess(req, res, responseBody, 'OK', constants.STRINGS.PASSWORD_UPDATED);
+		responseHandler.handleSuccess(req, res, responseBody, 'OK', 'PASSWORD_UPDATED');
 	} catch (err) {
 		debug('RESTORE', err);
-		let httpError = 'INTERNAL_SERVER_ERROR';
+		const errorLabels = ['NotVerified', 'InvalidValue'];
+		let httpError = '';
 		let errorMessage = '';
-		const errorLabels = ['NotFound', 'NotVerified', 'InvalidValue'];
 
 		if (err.name && errorLabels.indexOf(err.name) > -1) {
-			httpError = err.name !== 'NotFound' ? 'CONFLICT' : 'NOT_FOUND';
+			httpError = 'CONFLICT';
 			errorMessage = err.message;
 		}
 

@@ -1,9 +1,18 @@
+exports.NAME = 'production';
+
 exports.PRODUCTION = true;
 
 exports.APP = {
     NAME: 'BaseLine',
     VERSION: '1.0.0',
-    DESCRIPTION: 'BaseLine description'
+    DESCRIPTION: 'BaseLine description',
+    DEFAULT_LANG: 'en'
+};
+
+exports.HOST = {
+    FRONTEND: 'http://localhost:4200/',
+    PUBLIC: 'http://localhost:3000/',
+    MEDIA: 'http://localhost:3000/media/',
 };
 
 exports.JWT = {
