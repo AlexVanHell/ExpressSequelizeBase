@@ -1,4 +1,4 @@
-const debug = require('debug')('controllers:users');
+const debug = require('debug')('controllers:login');
 const crypto = require('crypto');
 const Promise = require('bluebird');
 const settings = require('../settings');

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const settings = require('../../settings');
 const defaultLang = settings.APP.DEFAULT_LANG;
-const interpolate = require('./interpolate');
+const interpolate = require('../../lib/util').interpolate;
 const langs = require('./langs');
 
 /**

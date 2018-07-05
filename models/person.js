@@ -136,10 +136,15 @@ module.exports = (sequelize, DataTypes) => {
 
 	// Hooks
 	Person.beforeCreate(function (user, options) {
+		user.email = user.email.toLowerCase();
+
 		return Person.generateHash(user.password)
-			.then(function (hasedPassword) {
+			.then(function (hasedPassword) {		
 				user.password = hasedPassword;
 			});
+	});
+	Person.beforeUpdate(function(user, options) {
+		user.email = user.email.toLowerCase();
 	});
 
 	// Utils
