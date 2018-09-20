@@ -99,6 +99,8 @@ exports.login = async function (req, res, next) {
 			errorMessage = err.message;
 		}
 
+		debug(httpError, errorMessage);
+
 		responseHandler.handleError(req, res, err, httpError, httpError, errorMessage);
 	}
 };
