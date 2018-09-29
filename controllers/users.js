@@ -32,7 +32,12 @@ exports.get = async function (req, res, next) {
 			}]
 		});
 
-		responseBody = rows;
+		const count = await db.Person.findOne({
+			attributes: [[db.sequelize.fn('COUNT', db.sequelize.col('id')), 'total']],
+			where: { visible: true },
+		});
+
+		responseBody = { list: rows, rows: count.get('total') };
 
 		responseHandler.handleSuccess(req, res, responseBody, 'OK');
 	} catch (err) {
