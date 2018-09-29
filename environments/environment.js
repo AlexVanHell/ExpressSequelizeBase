@@ -23,10 +23,10 @@ exports.JWT = {
 exports.DB = {
     MYSQL: {
         DATABASE: 'dbnodebaseline',
-        HOST: '192.168.100.2',
+        HOST: 'localhost',
         PORT: 3306,
-        USERNAME: 'root',
-        PASSWORD: 'Bitware2016',
+        USERNAME: 'develop',
+        PASSWORD: 'M1C0ntr4s3n49752',
         DIALECT: 'mysql',
         SEEDER_STORAGE: 'sequelize'
     }
