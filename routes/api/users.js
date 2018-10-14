@@ -10,11 +10,11 @@ router.route('/')
 	.post(auth.authRequest, validations.validate('createUser'), controller.create);
 
 router.route('/:id')
-	.get(controller.getById)
-	.put(controller.update)
-	.delete(controller.delete);
+	.get(auth.authRequest, controller.getById)
+	.put(auth.authRequest, controller.update)
+	.delete(auth.authRequest, controller.delete);
 
 router.route('/:id/lock')
-	.get(controller.lock);
+	.get(auth.authRequest, controller.lock);
 
 module.exports = router;

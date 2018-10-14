@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const Promise = require('bluebird');
 const settings = require('../settings');
 
-const responseHandler = require('../lib/util/http-response-handler');
+const responseHandler = require('../lib/common/http-response-handler');
 const util = require('../lib/util');
 const db = require('../models');
 // Models
@@ -342,7 +342,7 @@ exports.lock = async function (req, res, next) {
 	try {
 		const find = await db.Person.findOne({
 			where: { id: itemId, visible: true },
-			attributes: ['id']
+			attributes: ['id', 'active']
 		});
 
 		if (!find) {

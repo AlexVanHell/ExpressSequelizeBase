@@ -3,15 +3,19 @@ const router = express.Router();
 
 const controller = require('../../controllers/login');
 const validations = require('../../lib/request-validations');
+const auth = require('../../lib/auth');
 
-router.post('/login', validations.validate('login'), controller.login);
+router.route('/login')
+	.post(validations.validate('login'), controller.login);
 
 router.route('/recovery')
 	.get(controller.verifyRecovery)
 	.post(controller.recovery);
 
-router.post('/restore', controller.restore);
+router.route('/restore')
+	.post(controller.restore);
 
-router.post('/update-password', controller.update);
+router.route('/update-password')
+	.post(auth.authRequest, controller.update);
 
 module.exports = router;
