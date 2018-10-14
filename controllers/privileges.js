@@ -249,7 +249,7 @@ exports.lock = async function (req, res, next) {
 	try {
 		const find = await db.Privilege.findOne({
 			where: { id: itemId, visible: true },
-			attributes: ['id']
+			attributes: ['id', 'active']
 		});
 
 		if (!find) {
