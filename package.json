@@ -8,10 +8,10 @@
 	},
 	"scripts": {
 		"start": "node ./bin/www",
-		"apidoc": "apidoc -e \"(node_modules|public)\" -o public/apidoc",
-		"demon": "nodemon ./bin/www",
-		"debug": "set DEBUG=base-line:*,sockets:*,controllers:*,util:* && nodemon --inspect ./bin/www",
-		"debug-linux": "DEBUG=base-line:*,sockets:*,controllers:*,util:* nodemon --inspect ./bin/www",
+		"apidoc": "./node_modules/.bin/apidoc -e \"(node_modules|public)\" -o public/apidoc",
+		"demon": "./node_modules/.bin/nodemon ./bin/www",
+		"debug": "set DEBUG=base-line:*,sockets:*,controllers:*,util:* && ./node_modules/.bin/nodemon --inspect ./bin/www",
+		"debug-linux": "DEBUG=base-line:*,sockets:*,controllers:*,util:* ./node_modules/.bin/nodemon --inspect ./bin/www",
 		"prod": "NODE_ENV=production node ./bin/www"
 	},
 	"dependencies": {
@@ -34,6 +34,7 @@
 		"serve-favicon": "^2.5.0"
 	},
 	"devDependencies": {
+		"nodemon": "^1.18.5",
 		"sequelize-cli": "^4.0.0"
 	}
 }
