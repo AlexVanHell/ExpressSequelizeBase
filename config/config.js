@@ -8,6 +8,7 @@ const object = {
 	password: config.PASSWORD,
 	database: config.DATABASE,
 	host: config.HOST,
+	port: config.PORT || 3306,
 	dialect: config.DIALECT,
 	seederStorage: config.SEEDER_STORAGE,
 	define: {
