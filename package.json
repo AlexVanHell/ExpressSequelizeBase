@@ -10,8 +10,9 @@
 		"start": "node ./bin/www",
 		"apidoc": "./node_modules/.bin/apidoc -e \"(node_modules|public)\" -o public/apidoc",
 		"demon": "./node_modules/.bin/nodemon ./bin/www",
-		"debug": "set DEBUG=base-line:*,sockets:*,controllers:*,util:* && ./node_modules/.bin/nodemon --inspect ./bin/www",
-		"debug-linux": "DEBUG=base-line:*,sockets:*,controllers:*,util:* ./node_modules/.bin/nodemon --inspect ./bin/www",
+		"debug-windows-demon": "node node_modules/nodemon/bin/nodemon --inspect ./bin/www",
+		"debug-windows": "set DEBUG=base-line:*,sockets:*,controllers:*,util:* && npm run debug-windows-demon",
+		"debug": "DEBUG=base-line:*,sockets:*,controllers:*,util:* ./node_modules/.bin/nodemon --inspect ./bin/www",
 		"prod": "NODE_ENV=production node ./bin/www"
 	},
 	"dependencies": {
