@@ -26,7 +26,7 @@ exports.DB = {
         HOST: 'localhost',
         PORT: 3306,
         USERNAME: 'develop',
-        PASSWORD: 'M1C0ntr4s3n49752',
+        PASSWORD: 'D3v3l0pm3ntP4ssw0rd',
         DIALECT: 'mysql',
         SEEDER_STORAGE: 'sequelize'
     }
